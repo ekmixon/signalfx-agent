@@ -37,10 +37,7 @@ def has_all_dims(dp_or_event, dims):
 
 # Tests if any datapoints has all of the given dimensions
 def has_datapoint_with_all_dims(fake_services, dims):
-    for dp in fake_services.datapoints:
-        if has_all_dims(dp, dims):
-            return True
-    return False
+    return any(has_all_dims(dp, dims) for dp in fake_services.datapoints)
 
 
 # Tests if any datapoint received has the given dim key/value on it.
@@ -51,11 +48,7 @@ def has_datapoint_with_dim(fake_services, key, value):
 # Tests if all datapoints received have some or all the given dims.
 def datapoints_have_some_or_all_dims(fake_services, dims):
     for dp in fake_services.datapoints:
-        has_dim = False
-        for dp_dim in dp.dimensions:
-            if dims.get(dp_dim.key) == dp_dim.value:
-                has_dim = True
-                break
+        has_dim = any(dims.get(dp_dim.key) == dp_dim.value for dp_dim in dp.dimensions)
         if not has_dim:
             return False
     return True
@@ -113,13 +106,9 @@ def has_datapoint(fake_services, metric_name=None, dimensions=None, value=None, 
 
 def tsid_for_datapoint(dp: sf_pbuf.DataPoint):
     key = f"{dp.metric}"
-    dim_keys = []
-    for dim in dp.dimensions:
-        dim_keys.append(f"#{dim.key}|{dim.value}")
-
+    dim_keys = [f"#{dim.key}|{dim.value}" for dim in dp.dimensions]
     dim_keys.sort()
-    tsid = hash(key + "|".join(dim_keys))
-    return tsid
+    return hash(key + "|".join(dim_keys))
 
 
 def all_timeseries(fake_services):
@@ -144,10 +133,7 @@ def has_time_series(fake_services, metric_name: str, dimensions: dict) -> bool:
 
 
 def has_event_type(fake_services, event_type):
-    for evt in fake_services.events:
-        if evt.eventType == event_type:
-            return True
-    return False
+    return any(evt.eventType == event_type for evt in fake_services.events)
 
 
 # Tests if any event received has the given dim key/value on it.
@@ -155,10 +141,7 @@ def has_event_with_dim(fake_services, key, value):
     """
     Tests if any event received has the given dim key/value on it.
     """
-    for event in fake_services.events:
-        if has_all_dims(event, {key: value}):
-            return True
-    return False
+    return any(has_all_dims(event, {key: value}) for event in fake_services.events)
 
 
 def container_cmd_exit_0(container, command):
@@ -186,7 +169,7 @@ def has_log_message(output, level="info", message=""):
         match = re.search(r"(?<=level=)\w+", line)
         if match is None:
             continue
-        if level == match.group(0) and message in line:
+        if level == match[0] and message in line:
             return True
     return False
 
@@ -202,7 +185,12 @@ def udp_port_open_locally(port):
     """
     Returns true is the given port # is open on the local host
     """
-    return os.system("cat /proc/net/udp /proc/net/udp6 | grep %s" % (hex(port)[2:].upper(),)) == 0
+    return (
+        os.system(
+            f"cat /proc/net/udp /proc/net/udp6 | grep {hex(port)[2:].upper()}"
+        )
+        == 0
+    )
 
 
 def local_tcp_port_has_connection(port):
@@ -261,9 +249,7 @@ def has_any_metric_or_dim(fake_services, metrics, dims):
         return any_metric_has_any_dim_key(fake_services, metrics, dims)
     if metrics:
         return any_metric_found(fake_services, metrics)
-    if dims:
-        return any_dim_key_found(fake_services, dims)
-    return False
+    return any_dim_key_found(fake_services, dims) if dims else False
 
 
 def tcp_socket_open(host, port):
@@ -301,7 +287,7 @@ def http_status(url=None, status=None, username=None, password=None, timeout=1, 
     except urllib.error.HTTPError as err:
         # urllib raises exceptions for some http error statuses
         return err.code in status
-    except (urllib.error.URLError, socket.timeout, HTTPException, ConnectionResetError, ConnectionError):
+    except (urllib.error.URLError, socket.timeout, HTTPException, ConnectionError):
         return False
 
 
@@ -351,12 +337,11 @@ def all_datapoints_have_dims(fake_services, dims):
 
 
 def all_datapoints_have_dim_key(fake_services, dim_key):
-    if not fake_services.datapoints:
-        return False
-    for dp in fake_services.datapoints:
-        if not has_dim_key(dp, dim_key):
-            return False
-    return True
+    return (
+        all(has_dim_key(dp, dim_key) for dp in fake_services.datapoints)
+        if fake_services.datapoints
+        else False
+    )
 
 
 def has_dim_key(dp_or_event, key):
@@ -379,9 +364,7 @@ def has_dim_tag(fake_services, dim_name, dim_value, tag_value):
     """
     dim = fake_services.dims[dim_name][dim_value]
     tags = dim.get("tags", [])
-    if tags is not None:
-        return tag_value in tags
-    return False
+    return tag_value in tags if tags is not None else False
 
 
 def has_dim_prop(fake_services, dim_name, dim_value, prop_name, prop_value=None):
@@ -436,7 +419,13 @@ def has_all_dim_props(fake_services, dim_name, dim_value, props):
     False if any are missing.  There can be additional properties on the
     dimension not covered by props.
     """
-    for k, v in props.items():
-        if not has_dim_prop(fake_services, dim_name=dim_name, dim_value=dim_value, prop_name=k, prop_value=v):
-            return False
-    return True
+    return all(
+        has_dim_prop(
+            fake_services,
+            dim_name=dim_name,
+            dim_value=dim_value,
+            prop_name=k,
+            prop_value=v,
+        )
+        for k, v in props.items()
+    )

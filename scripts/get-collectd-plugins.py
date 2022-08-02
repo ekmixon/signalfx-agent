@@ -12,7 +12,7 @@ import yaml
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 TARGET_DIR = os.path.join("/", "usr", "share", "collectd") if len(sys.argv) < 2 else sys.argv[1]
-PYTHON_EXECUTABLE = sys.executable if sys.executable else "python"
+PYTHON_EXECUTABLE = sys.executable or "python"
 
 with open(os.path.join(SCRIPT_DIR, "..", "collectd-plugins.yaml"), "r") as f:
     PLUGINS = yaml.safe_load(f)

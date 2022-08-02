@@ -59,7 +59,7 @@ def test_java_monitor_restarts_when_killed():
         proc = psutil.Process(agent.pid)
         assert len(proc.children()) == 1, "not exactly one subprocess"
 
-        for _ in range(0, 5):
+        for _ in range(5):
             proc.children()[0].terminate()
 
             time.sleep(1)

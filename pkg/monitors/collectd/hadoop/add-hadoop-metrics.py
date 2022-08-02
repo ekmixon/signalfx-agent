@@ -11,8 +11,6 @@ from ruamel import yaml
 GAUGE = "gauge"
 COUNTER = "counter"
 
-METRICS = {}
-
 HADOOP_CLUSTER_METRICS = {
     "activeNodes": (GAUGE, "hadoop.cluster.metrics.active_nodes"),
     "allocatedMB": (GAUGE, "hadoop.cluster.metrics.allocated_mb"),
@@ -146,18 +144,18 @@ MAPREDUCE_JOB_METRICS = {
 }
 
 
-###################
-
-METRICS["cluster"] = HADOOP_CLUSTER_METRICS
-METRICS["leaf-queue"] = HADOOP_LEAF_QUEUE
-METRICS["root-queue"] = HADOOP_ROOT_QUEUE
-METRICS["queue-users"] = HADOOP_QUEUE_USERS
-METRICS["resource-objects"] = HADOOP_RESOURCE_OBJECT
-METRICS["fifo-scheduler"] = HADOOP_FIFO_SCHEDULER
-METRICS["applications"] = HADOOP_APPLICATIONS
-METRICS["nodes"] = HADOOP_NODE_METRICS
-METRICS["node-resources"] = HADOOP_NODE_RESOURCE_UTIL
-METRICS["mapreduce-jobs"] = MAPREDUCE_JOB_METRICS
+METRICS = {
+    "cluster": HADOOP_CLUSTER_METRICS,
+    "leaf-queue": HADOOP_LEAF_QUEUE,
+    "root-queue": HADOOP_ROOT_QUEUE,
+    "queue-users": HADOOP_QUEUE_USERS,
+    "resource-objects": HADOOP_RESOURCE_OBJECT,
+    "fifo-scheduler": HADOOP_FIFO_SCHEDULER,
+    "applications": HADOOP_APPLICATIONS,
+    "nodes": HADOOP_NODE_METRICS,
+    "node-resources": HADOOP_NODE_RESOURCE_UTIL,
+    "mapreduce-jobs": MAPREDUCE_JOB_METRICS,
+}
 
 
 def map_metric_type(typ):

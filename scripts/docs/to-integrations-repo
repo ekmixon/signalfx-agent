@@ -80,7 +80,7 @@ def load_monitor_docs_from_self_describe_json():
 
 
 def surround_by_tick(a_list):
-    return ["`%s`" % an_element for an_element in a_list]
+    return [f"`{an_element}`" for an_element in a_list]
 
 
 def has_atleast_one_monitor_with_section(section):
@@ -88,10 +88,7 @@ def has_atleast_one_monitor_with_section(section):
     Returns true if there's at least one monitor with
     the section in the doc
     """
-    for doc in section.values():
-        if doc:
-            return True
-    return False
+    return any(section.values())
 
 
 def send_all_metrics_from_all_monitors(send_metrics_field):
@@ -99,10 +96,7 @@ def send_all_metrics_from_all_monitors(send_metrics_field):
     Returns true if all monitors of an integration sends all
     metrics by default
     """
-    for v in send_metrics_field.values():
-        if not v:
-            return False
-    return True
+    return all(send_metrics_field.values())
 
 
 def append_metric_name(metric_name, metric_info):
@@ -119,9 +113,11 @@ def process_metrics_from_self_describe(monitor_type, metrics):
     Takes in a list of metrics from selfdescribe json and processes
     it for easy consumption by the Jinja2 template
     """
-    if not metrics:
-        return {monitor_type: None}
-    return {monitor_type: [append_metric_name(m, n) for m, n in metrics.items()]}
+    return (
+        {monitor_type: [append_metric_name(m, n) for m, n in metrics.items()]}
+        if metrics
+        else {monitor_type: None}
+    )
 
 
 def process_config_field(field):
@@ -148,8 +144,7 @@ def process_config_field(field):
     if isinstance(field["default"], list):
         field["default"] = str(field["default"]).replace("'", "")
 
-    processed_field = copy.deepcopy(field)
-    return processed_field
+    return copy.deepcopy(field)
 
 
 def process_config_fields_helper(config, yamlname="Config"):
@@ -210,9 +205,11 @@ def monitor_docs_per_integrations_repo(monitor_docs):
             integrations_dir = ALL_OTHER_METRICS_DIR
 
         if integrations_dir not in out:
-            out[integrations_dir] = {}
-            out[integrations_dir]["monitor_types"] = []
-            out[integrations_dir]["send_all_metrics"] = OrderedDict()
+            out[integrations_dir] = {
+                "monitor_types": [],
+                "send_all_metrics": OrderedDict(),
+            }
+
             out[integrations_dir]["description"] = OrderedDict()
             out[integrations_dir]["config"] = OrderedDict()
             out[integrations_dir]["metrics"] = OrderedDict()
@@ -246,12 +243,11 @@ def get_jinja_env():
 
 def get_template():
     j2_env = get_jinja_env()
-    template = j2_env.get_template("integrations_doc.md.jinja2")
-    return template
+    return j2_env.get_template("integrations_doc.md.jinja2")
 
 
 def sync_docs(integration_dirs):
-    integrations_dirs_to_skip = set(["signalfx-agent", "signalfx-agent-metrics"])
+    integrations_dirs_to_skip = {"signalfx-agent", "signalfx-agent-metrics"}
     template = get_template()
 
     for integrations_dir, monitors_info in integration_dirs.items():
@@ -330,18 +326,19 @@ def sync_metrics(integration_dirs):
 
 
 def sync_dimensions(integration_dirs):
-    integrations_dirs_to_skip = set(["signalfx-agent-metrics"])
+    integrations_dirs_to_skip = {"signalfx-agent-metrics"}
     for integrations_dir, monitors_info in integration_dirs.items():
         if integrations_dir in integrations_dirs_to_skip:
             continue
-        dim_yaml = ""
-        for monitor, monitor_dims in monitors_info.get("dimensions", {}).items():
-            if not monitor_dims:
-                continue
+        dim_yaml = "".join(
+            generate_dimension_yaml(monitor, monitor_dims)
+            for monitor, monitor_dims in monitors_info.get(
+                "dimensions", {}
+            ).items()
+            if monitor_dims
+        )
 
-            dim_yaml += generate_dimension_yaml(monitor, monitor_dims)
-
-        if dim_yaml == "":
+        if not dim_yaml:
             continue
 
         print(f"Syncing dimensions to {integrations_dir} directory")
@@ -358,7 +355,7 @@ def generate_config_yaml(mon_config):
 
 
 def sync_config(integration_dirs):
-    integrations_dirs_to_skip = set(["signalfx-agent-metrics"])
+    integrations_dirs_to_skip = {"signalfx-agent-metrics"}
     for integrations_dir, monitors_info in integration_dirs.items():
         if integrations_dir in integrations_dirs_to_skip:
             continue

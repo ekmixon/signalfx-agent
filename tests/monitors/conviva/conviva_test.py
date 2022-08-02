@@ -2,6 +2,7 @@
 Tests for the conviva monitor
 """
 
+
 # pylint: disable=redefined-outer-name
 import json
 import os
@@ -32,9 +33,11 @@ CONVIVA_PULSE_USERNAME = os.environ.get("CONVIVA_PULSE_USERNAME")
 CONVIVA_PULSE_PASSWORD = os.environ.get("CONVIVA_PULSE_PASSWORD")
 if not CONVIVA_PULSE_USERNAME or not CONVIVA_PULSE_PASSWORD:
     pytest.skip("CONVIVA_PULSE_USERNAME and/or CONVIVA_PULSE_PASSWORD env vars not set", allow_module_level=True)
-CONVIVA_DEBUG = False
-if os.environ.get("CONVIVA_DEBUG", "").lower() in ["1", "yes", "true"]:
-    CONVIVA_DEBUG = True
+CONVIVA_DEBUG = os.environ.get("CONVIVA_DEBUG", "").lower() in [
+    "1",
+    "yes",
+    "true",
+]
 
 
 def get_conviva_json(path, max_attempts=3):
@@ -208,8 +211,8 @@ def test_conviva_metriclens():
 @pytest.mark.flaky(reruns=2, reruns_delay=30)
 def test_conviva_single_metriclens_dimension(conviva_metriclens_dimensions):
     with Agent.run(
-        dedent(
-            f"""
+            dedent(
+                f"""
         intervalSeconds: 5
         monitors:
         - type: conviva
@@ -220,17 +223,21 @@ def test_conviva_single_metriclens_dimension(conviva_metriclens_dimensions):
             metricLensDimensions:
             - {conviva_metriclens_dimensions[0]}
     """
-        ),
-        debug=CONVIVA_DEBUG,
-    ) as agent:
+            ),
+            debug=CONVIVA_DEBUG,
+        ) as agent:
         assert wait_for(lambda: agent.fake_services.datapoints), "Didn't get conviva datapoints"
         pattern = re.compile(r"^conviva\.quality_metriclens\..*")
         assert ensure_always(
             p(all_datapoints_have_metric_name, agent.fake_services, pattern)
         ), "Received conviva datapoints for other metrics"
         assert ensure_always(
-            p(all_datapoints_have_dim_key, agent.fake_services, get_dim_key(conviva_metriclens_dimensions[0]))
-        ), ("Received conviva datapoints without %s dimension" % conviva_metriclens_dimensions[0])
+            p(
+                all_datapoints_have_dim_key,
+                agent.fake_services,
+                get_dim_key(conviva_metriclens_dimensions[0]),
+            )
+        ), f"Received conviva datapoints without {conviva_metriclens_dimensions[0]} dimension"
 
 
 @pytest.mark.flaky(reruns=2, reruns_delay=30)

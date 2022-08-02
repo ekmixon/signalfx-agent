@@ -90,16 +90,15 @@ def agent_has_new_pid(container, old_pid):
 
 
 def get_agent_yaml_diff(old_agent_yaml, new_agent_yaml):
-    diff = "\n".join(
+    return "\n".join(
         difflib.unified_diff(
             old_agent_yaml.splitlines(),
             new_agent_yaml.splitlines(),
-            fromfile="%s.orig" % AGENT_YAML_PATH,
+            fromfile=f"{AGENT_YAML_PATH}.orig",
             tofile=AGENT_YAML_PATH,
             lineterm="",
         )
     ).strip()
-    return diff
 
 
 def update_agent_yaml(container, backend, hostname="test-hostname"):
@@ -111,7 +110,10 @@ def update_agent_yaml(container, backend, hostname="test-hostname"):
             _, _ = container.exec_run("bash -ec 'echo >> %s'" % AGENT_YAML_PATH)
             _, _ = container.exec_run("bash -ec 'echo \"%s: %s\" >> %s'" % (name, value, AGENT_YAML_PATH))
 
-    assert path_exists_in_container(container, AGENT_YAML_PATH), "File %s does not exist!" % AGENT_YAML_PATH
+    assert path_exists_in_container(
+        container, AGENT_YAML_PATH
+    ), f"File {AGENT_YAML_PATH} does not exist!"
+
     if hostname:
         set_option("hostname", hostname)
     ingest_url = "http://%s:%d" % (backend.ingest_host, backend.ingest_port)
@@ -142,7 +144,7 @@ def _test_install_package(cont, cmd):
 
 def _test_service_status(container, init_system, expected_status):
     _, output = container.exec_run(INIT_STATUS_COMMAND[init_system])
-    print("%s status command output:" % init_system)
+    print(f"{init_system} status command output:")
     print_lines(output)
     assert INIT_STATUS_OUTPUT[init_system][expected_status] in output.decode("utf-8"), (
         "'%s' expected in status output" % INIT_STATUS_OUTPUT[init_system][expected_status]
@@ -151,7 +153,7 @@ def _test_service_status(container, init_system, expected_status):
 
 def _test_service_list(container, init_system, service_name="signalfx-agent"):
     code, output = container.exec_run(INIT_LIST_COMMAND[init_system])
-    print("%s list command output:" % init_system)
+    print(f"{init_system} list command output:")
     print_lines(output)
     assert code == 0, "Failed to get service list"
     assert service_name in output.decode("utf-8"), "Agent service not registered"
@@ -159,7 +161,7 @@ def _test_service_list(container, init_system, service_name="signalfx-agent"):
 
 def _test_service_start(container, init_system, backend, user="signalfx-agent"):
     code, output = container.exec_run(INIT_START_COMMAND[init_system])
-    print("%s start command output:" % init_system)
+    print(f"{init_system} start command output:")
     print_lines(output)
     backend.reset_datapoints()
     assert code == 0, "Agent could not be started"
@@ -170,7 +172,7 @@ def _test_service_start(container, init_system, backend, user="signalfx-agent"):
 def _test_service_restart(container, init_system, backend):
     old_pid = get_agent_pid(container)
     code, output = container.exec_run(INIT_RESTART_COMMAND[init_system])
-    print("%s restart command output:" % init_system)
+    print(f"{init_system} restart command output:")
     print_lines(output)
     backend.reset_datapoints()
     assert code == 0, "Agent could not be restarted"
@@ -181,14 +183,17 @@ def _test_service_restart(container, init_system, backend):
 
 def _test_service_stop(container, init_system, backend):
     code, output = container.exec_run(INIT_STOP_COMMAND[init_system])
-    print("%s stop command output:" % init_system)
+    print(f"{init_system} stop command output:")
     print_lines(output)
     assert code == 0, "Agent could not be stop"
     assert wait_for(
         lambda: not get_agent_pid(container), timeout_seconds=INIT_STOP_TIMEOUT
     ), "Timed out waiting for agent process to stop"
     if init_system in [INIT_SYSV, INIT_UPSTART]:
-        assert not path_exists_in_container(container, PIDFILE_PATH), "%s exists when agent is stopped" % PIDFILE_PATH
+        assert not path_exists_in_container(
+            container, PIDFILE_PATH
+        ), f"{PIDFILE_PATH} exists when agent is stopped"
+
     backend.reset_datapoints()
 
 
@@ -204,7 +209,7 @@ def _test_system_restart(container, init_system, backend):
 
 def _test_service_status_redirect(container):
     code, output = container.exec_run(INIT_STATUS_COMMAND[INIT_SYSV])
-    print("%s status command output:" % INIT_SYSV)
+    print(f"{INIT_SYSV} status command output:")
     print_lines(output)
     assert code == 0 and "/lib/systemd/system/signalfx-agent.service; enabled" in output.decode("utf-8")
 
@@ -232,7 +237,10 @@ def _test_package_verify(container, package_ext, base_image):
 def _test_service_override(container, init_system, backend):
     _test_service_stop(container, init_system, backend)
 
-    code, output = container.exec_run(f"useradd --system --user-group --no-create-home --shell /sbin/nologin test-user")
+    code, output = container.exec_run(
+        "useradd --system --user-group --no-create-home --shell /sbin/nologin test-user"
+    )
+
     assert code == 0, output.decode("utf-8")
 
     if init_system == INIT_SYSTEMD:
@@ -270,7 +278,10 @@ INSTALL_COMMAND = {
 def _test_package_install(base_image, package_path, init_system):
     with run_init_system_image(base_image, with_socat=False) as [cont, backend]:
         _, package_ext = os.path.splitext(package_path)
-        copy_file_into_container(package_path, cont, "/opt/signalfx-agent%s" % package_ext)
+        copy_file_into_container(
+            package_path, cont, f"/opt/signalfx-agent{package_ext}"
+        )
+
 
         install_deps(cont, base_image)
 
@@ -289,7 +300,7 @@ def _test_package_install(base_image, package_path, init_system):
             assert path_exists_in_container(cont, "/etc/init.d/signalfx-agent")
 
         cont.exec_run("bash -ec 'echo -n testing123 > /etc/signalfx/token'")
-        update_agent_yaml(cont, backend, hostname="test-" + base_image)
+        update_agent_yaml(cont, backend, hostname=f"test-{base_image}")
 
         try:
             _test_service_list(cont, init_system)
@@ -335,7 +346,10 @@ UPGRADE_COMMAND = {
 def _test_package_upgrade(base_image, package_path, init_system):
     with run_init_system_image(base_image, with_socat=False) as [cont, backend]:
         _, package_ext = os.path.splitext(package_path)
-        copy_file_into_container(package_path, cont, "/opt/signalfx-agent%s" % package_ext)
+        copy_file_into_container(
+            package_path, cont, f"/opt/signalfx-agent{package_ext}"
+        )
+
 
         install_deps(cont, base_image)
 
@@ -349,8 +363,11 @@ def _test_package_upgrade(base_image, package_path, init_system):
         _test_install_package(cont, install_cmd)
 
         cont.exec_run("bash -ec 'echo -n testing123 > /etc/signalfx/token'")
-        old_agent_yaml = update_agent_yaml(cont, backend, hostname="test-" + base_image)
-        _, _ = cont.exec_run("cp -f %s %s.orig" % (AGENT_YAML_PATH, AGENT_YAML_PATH))
+        old_agent_yaml = update_agent_yaml(
+            cont, backend, hostname=f"test-{base_image}"
+        )
+
+        _, _ = cont.exec_run(f"cp -f {AGENT_YAML_PATH} {AGENT_YAML_PATH}.orig")
 
         code, output = cont.exec_run(upgrade_cmd)
         print("Output of package upgrade:")

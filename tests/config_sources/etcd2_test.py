@@ -8,7 +8,7 @@ from tests.helpers.util import container_ip, run_container, wait_for
 
 def create_path(container, path, value):
     _, output = container.exec_run("/etcdctl set -- %s '%s'" % (path, value))
-    print("etcd: %s" % output)
+    print(f"etcd: {output}")
 
 
 ETCD2_IMAGE = "quay.io/coreos/etcd:v2.3.8"
@@ -40,7 +40,7 @@ def test_basic_etcd2_config():
         create_path(etcd, "/monitors/cpu", "- type: collectd/cpu")
         create_path(etcd, "/monitors/signalfx-metadata", "- type: collectd/signalfx-metadata")
 
-        final_conf = CONFIG.substitute(endpoint="%s:2379" % container_ip(etcd))
+        final_conf = CONFIG.substitute(endpoint=f"{container_ip(etcd)}:2379")
         with Agent.run(final_conf) as agent:
             assert wait_for(
                 p(has_datapoint_with_dim, agent.fake_services, "plugin", "signalfx-metadata")
@@ -67,7 +67,10 @@ def test_interior_globbing():
         create_path(etcd, "/services/cpu/monitor", "- type: collectd/cpu")
         create_path(etcd, "/services/signalfx/monitor", "- type: collectd/signalfx-metadata")
 
-        final_conf = INTERNAL_GLOB_CONFIG.substitute(endpoint="%s:2379" % container_ip(etcd))
+        final_conf = INTERNAL_GLOB_CONFIG.substitute(
+            endpoint=f"{container_ip(etcd)}:2379"
+        )
+
         with Agent.run(final_conf) as agent:
             assert wait_for(
                 p(has_event_with_dim, agent.fake_services, "plugin", "signalfx-metadata")

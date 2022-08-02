@@ -27,7 +27,10 @@ class Cluster:
         self.agent_image_name = agent_image_name
 
         chars = string.ascii_lowercase + string.digits
-        self.test_namespace = "pytest-" + "".join((random.choice(chars)) for x in range(8))
+        self.test_namespace = "pytest-" + "".join(
+            (random.choice(chars)) for _ in range(8)
+        )
+
 
         print(f"Using test namespace: {self.test_namespace}")
         print(f"Using kube config file '{kube_config_path}' with context '{kube_context}'")
@@ -83,14 +86,13 @@ class Cluster:
     def get_cluster_version(self):
         version_yaml = self.exec_kubectl("version --output=yaml")
         assert version_yaml, "failed to get kubectl version"
-        cluster_version = yaml.safe_load(version_yaml).get("serverVersion").get("gitVersion")
-        return cluster_version
+        return yaml.safe_load(version_yaml).get("serverVersion").get("gitVersion")
 
     def wait_for_deployments(self, resources, timeout_seconds=utils.K8S_CREATE_TIMEOUT):
         for doc in filter(lambda d: d.kind == "Deployment", resources):
             name = doc.metadata.name
             namespace = doc.metadata.namespace
-            print("Waiting for deployment %s to be ready ..." % name)
+            print(f"Waiting for deployment {name} to be ready ...")
             try:
                 start_time = time.time()
                 assert wait_for(
@@ -187,6 +189,6 @@ class Cluster:
                 yield pod_ip
             finally:
                 terminate_ingest_tunnel()
-                print("Ingest tunnel output: " + get_ingest_socat_output())
+                print(f"Ingest tunnel output: {get_ingest_socat_output()}")
                 terminate_api_tunnel()
-                print("API tunnel output: " + get_api_socat_output())
+                print(f"API tunnel output: {get_api_socat_output()}")

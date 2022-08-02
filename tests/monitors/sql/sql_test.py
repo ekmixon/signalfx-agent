@@ -12,16 +12,16 @@ pytestmark = [pytest.mark.monitor_with_endpoints]
 
 def test_sql_postgresql_db():
     with run_service(
-        "postgres",
-        buildargs={"POSTGRES_VERSION": "11-alpine"},
-        environment=["POSTGRES_USER=test_user", "POSTGRES_PASSWORD=test_pwd", "POSTGRES_DB=postgres"],
-    ) as postgres_cont:
+            "postgres",
+            buildargs={"POSTGRES_VERSION": "11-alpine"},
+            environment=["POSTGRES_USER=test_user", "POSTGRES_PASSWORD=test_pwd", "POSTGRES_DB=postgres"],
+        ) as postgres_cont:
         host = container_ip(postgres_cont)
         assert wait_for(p(tcp_socket_open, host, 5432), 60), "service didn't start"
 
         with Agent.run(
-            dedent(
-                f"""
+                    dedent(
+                        f"""
                 monitors:
                   - type: sql
                     host: {host}
@@ -43,8 +43,8 @@ def test_sql_postgresql_db():
                           valueColumn: count
                           dimensionColumns: [country]
                 """
-            )
-        ) as agent:
+                    )
+                ) as agent:
             assert wait_for(
                 p(
                     has_datapoint,
@@ -52,7 +52,7 @@ def test_sql_postgresql_db():
                     metric_name="cities_per_country",
                     dimensions={"country": "United States"},
                 )
-            ), f"Didn't get cities_per_country metric for USA"
+            ), "Didn't get cities_per_country metric for USA"
 
 
 @contextmanager
@@ -85,8 +85,8 @@ def run_mysql_replication():
 def test_sql_mysql_db():
     with run_mysql_replication() as [_, slave_ip]:
         with Agent.run(
-            dedent(
-                f"""
+                    dedent(
+                        f"""
                 monitors:
                   - type: sql
                     host: {slave_ip}
@@ -104,9 +104,14 @@ def test_sql_mysql_db():
                                    {{master_uuid: Master_UUID, channel: Channel_name}},
                                    Slave_SQL_Running == "Yes" ? 1 : 0)
                 """
-            )
-        ) as agent:
+                    )
+                ) as agent:
             assert wait_for(
-                p(has_datapoint, agent.fake_services, metric_name="mysql.slave_sql_running", value=1),
+                p(
+                    has_datapoint,
+                    agent.fake_services,
+                    metric_name="mysql.slave_sql_running",
+                    value=1,
+                ),
                 timeout_seconds=120,
-            ), f"Didn't get mysql.slave_sql_running metric"
+            ), "Didn't get mysql.slave_sql_running metric"

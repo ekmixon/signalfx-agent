@@ -127,10 +127,7 @@ def run_chef_client(cont, init_system, chef_version, agent_version, stage, monit
 )
 @pytest.mark.parametrize("chef_version", CHEF_VERSIONS)
 def test_chef(base_image, init_system, chef_version):
-    if (base_image, init_system) in DEB_DISTROS:
-        distro_type = "deb"
-    else:
-        distro_type = "rpm"
+    distro_type = "deb" if (base_image, init_system) in DEB_DISTROS else "rpm"
     if base_image == "centos8" and chef_version != "latest" and int(chef_version.split(".")[0]) < 15:
         pytest.skip(f"chef {chef_version} not supported on centos 8")
     buildargs = {"CHEF_INSTALLER_ARGS": ""}
@@ -195,7 +192,7 @@ def run_win_chef_client(backend, agent_version, stage, chef_version, monitors):
         fd.write(json.dumps(attributes))
         fd.flush()
         if chef_version == "latest" or int(chef_version.split(".")[0]) >= 15:
-            cmd = CHEF_CMD.format(attributes_path) + " --chef-license accept-silent"
+            cmd = f"{CHEF_CMD.format(attributes_path)} --chef-license accept-silent"
         else:
             cmd = CHEF_CMD.format(attributes_path)
         print('running "%s" ...' % cmd)
@@ -224,13 +221,13 @@ def run_win_chef_setup(chef_version):
     if run_win_command("chef-client --version", []).returncode == 0:
         run_win_command("choco uninstall -y -f chef-client")
     if chef_version == "latest":
-        run_win_command(f"choco upgrade -y -f chef-client")
+        run_win_command("choco upgrade -y -f chef-client")
     else:
         run_win_command(f"choco upgrade -y -f chef-client --version {chef_version}")
     if WIN_CHEF_BIN_DIR not in os.environ.get("PATH"):
-        os.environ["PATH"] = WIN_CHEF_BIN_DIR + ";" + os.environ.get("PATH")
+        os.environ["PATH"] = f"{WIN_CHEF_BIN_DIR};" + os.environ.get("PATH")
     if WIN_GEM_BIN_DIR not in os.environ.get("PATH"):
-        os.environ["PATH"] = WIN_GEM_BIN_DIR + ";" + os.environ.get("PATH")
+        os.environ["PATH"] = f"{WIN_GEM_BIN_DIR};" + os.environ.get("PATH")
     os.makedirs(WIN_CHEF_COOKBOOKS_DIR, exist_ok=True)
     if os.path.isdir(WIN_AGENT_COOKBOOK_DEST_DIR):
         shutil.rmtree(WIN_AGENT_COOKBOOK_DEST_DIR)

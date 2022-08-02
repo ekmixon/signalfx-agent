@@ -17,14 +17,14 @@ ENV = ["POSTGRES_USER=test_user", "POSTGRES_PASSWORD=test_pwd", "POSTGRES_DB=pos
 @pytest.mark.parametrize("version", ["9.2-alpine", "9-alpine", "10-alpine", "11-alpine", "12-alpine", "13-alpine"])
 def test_postgresql(version):
     with run_service(
-        "postgres", buildargs={"POSTGRES_VERSION": version}, environment=ENV, print_logs=False
-    ) as postgres_cont:
+            "postgres", buildargs={"POSTGRES_VERSION": version}, environment=ENV, print_logs=False
+        ) as postgres_cont:
         host = container_ip(postgres_cont)
         assert wait_for(p(tcp_socket_open, host, 5432), 60), "service didn't start"
 
         with Agent.run(
-            dedent(
-                f"""
+                    dedent(
+                        f"""
                 monitors:
                   - type: postgresql
                     host: {host}
@@ -36,28 +36,33 @@ def test_postgresql(version):
                     connectionString: >
                       user={{{{.username}}}} password={{{{.password}}}} dbname=postgres sslmode=disable
                 """
-            )
-        ) as agent:
+                    )
+                ) as agent:
             for metric in METADATA.default_metrics:
                 assert wait_for(
                     p(has_datapoint, agent.fake_services, metric_name=metric, dimensions={"database": "dvdrental"})
                 ), f"Didn't get default postgresql metric {metric} for database dvdrental"
 
             assert wait_for(
-                p(has_datapoint, agent.fake_services, dimensions={"database": "postgres"}), timeout_seconds=10
-            ), f"Didn't get metric for postgres default database"
+                p(
+                    has_datapoint,
+                    agent.fake_services,
+                    dimensions={"database": "postgres"},
+                ),
+                timeout_seconds=10,
+            ), "Didn't get metric for postgres default database"
 
 
 def test_postgresql_database_filter():
     with run_service(
-        "postgres", buildargs={"POSTGRES_VERSION": "11-alpine"}, environment=ENV, print_logs=False
-    ) as postgres_cont:
+            "postgres", buildargs={"POSTGRES_VERSION": "11-alpine"}, environment=ENV, print_logs=False
+        ) as postgres_cont:
         host = container_ip(postgres_cont)
         assert wait_for(p(tcp_socket_open, host, 5432), 60), "service didn't start"
 
         with Agent.run(
-            dedent(
-                f"""
+                    dedent(
+                        f"""
                 monitors:
                   - type: postgresql
                     host: {host}
@@ -65,13 +70,15 @@ def test_postgresql_database_filter():
                     connectionString: "user=test_user password=test_pwd dbname=postgres sslmode=disable"
                     databases: ['*', '!postgres']
                 """
-            )
-        ) as agent:
+                    )
+                ) as agent:
             for metric in METADATA.default_metrics:
                 assert wait_for(
                     p(has_datapoint, agent.fake_services, metric_name=metric, dimensions={"database": "dvdrental"})
                 ), f"Didn't get default postgresql metric {metric} for database dvdrental"
 
             assert ensure_always(
-                lambda: not has_datapoint(agent.fake_services, dimensions={"database": "postgres"})
-            ), f"Should not get metric for postgres default database"
+                lambda: not has_datapoint(
+                    agent.fake_services, dimensions={"database": "postgres"}
+                )
+            ), "Should not get metric for postgres default database"

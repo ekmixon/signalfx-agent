@@ -9,7 +9,10 @@ import requests
 ARTIFACTORY_URL = "https://splunk.jfrog.io/splunk"
 ARTIFACTORY_API_URL = f"{ARTIFACTORY_URL}/api"
 CHAPERONE_API_URL = "https://chaperone.re.splunkdev.com/api-service"
-SIGNED_ARTIFACTS_REPO_URL = f"https://repo.splunk.com/artifactory/signed-artifacts"
+SIGNED_ARTIFACTS_REPO_URL = (
+    "https://repo.splunk.com/artifactory/signed-artifacts"
+)
+
 STAGING_URL = "https://repo.splunk.com/artifactory"
 STAGING_REPO = "signalfx-agent-local"
 STAGING_REPO_URL = f"{STAGING_URL}/{STAGING_REPO}"
@@ -38,7 +41,10 @@ def submit_signing_request(src, sign_type, token):
     headers = {"Accept": "application/json", "Authorization": f"Bearer {token}"}
     data = {"artifact_url": src, "sign_type": sign_type, "project_key": "signalfx-agent"}
 
-    resp = requests.post(CHAPERONE_API_URL + "/SIGN/submit", headers=headers, data=data)
+    resp = requests.post(
+        f"{CHAPERONE_API_URL}/SIGN/submit", headers=headers, data=data
+    )
+
 
     assert resp.status_code == 200, f"signing request failed:\n{resp.reason}"
     assert "item_key" in resp.json().keys(), f"'item_key' not found in response:\n{resp.text}"
@@ -213,7 +219,7 @@ def add_signing_args(parser):
 
 
 def check_signing_args(args):
-    assert args.chaperone_token, f"Chaperone token not set"
+    assert args.chaperone_token, "Chaperone token not set"
     assert args.staging_user, f"{STAGING_URL} username not set"
     assert args.staging_token, f"{STAGING_URL} token not set"
 

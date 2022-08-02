@@ -26,14 +26,14 @@ def run_supervisor_fpm():
 
 def test_supervisor_default():
     with run_supervisor_fpm() as host, Agent.run(
-        f"""
+            f"""
         monitors:
         - type: supervisor
           host: {host}
           port: {PORT}
         """
-    ) as agent:
+        ) as agent:
         verify(agent, METADATA.default_metrics)
         assert has_datapoint_with_dim(
             agent.fake_services, "name", PROCESS
-        ), "Didn't get process name dimension {}".format(PROCESS)
+        ), f"Didn't get process name dimension {PROCESS}"

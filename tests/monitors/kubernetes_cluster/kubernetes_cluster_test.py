@@ -167,12 +167,23 @@ def test_jobs(k8s_cluster):
         """
         with k8s_cluster.run_agent(agent_yaml=config) as agent:
             assert wait_for(
-                p(has_datapoint, agent.fake_services, dimensions={"kubernetes_name": "pi"}), timeout_seconds=600
-            ), f"timed out waiting for job metric"
+                p(
+                    has_datapoint,
+                    agent.fake_services,
+                    dimensions={"kubernetes_name": "pi"},
+                ),
+                timeout_seconds=600,
+            ), "timed out waiting for job metric"
+
 
             assert wait_for(
-                p(has_datapoint, agent.fake_services, metric_name="kubernetes.job.completions")
-            ), f"timed out waiting for job metric completions"
+                p(
+                    has_datapoint,
+                    agent.fake_services,
+                    metric_name="kubernetes.job.completions",
+                )
+            ), "timed out waiting for job metric completions"
+
 
             assert wait_for(
                 p(
@@ -208,19 +219,35 @@ def test_jobs_no_completions(k8s_cluster):
         """
         with k8s_cluster.run_agent(agent_yaml=config) as agent:
             assert wait_for(
-                p(has_datapoint, agent.fake_services, dimensions={"kubernetes_name": "pi-no-completions"}),
+                p(
+                    has_datapoint,
+                    agent.fake_services,
+                    dimensions={"kubernetes_name": "pi-no-completions"},
+                ),
                 timeout_seconds=600,
-            ), f"timed out waiting for job metric"
+            ), "timed out waiting for job metric"
+
 
             ## wait for job to finish
             assert wait_for(
-                p(has_datapoint, agent.fake_services, metric_name="kubernetes.job.succeeded")
-            ), f"timed out waiting for job metric completions"
+                p(
+                    has_datapoint,
+                    agent.fake_services,
+                    metric_name="kubernetes.job.succeeded",
+                )
+            ), "timed out waiting for job metric completions"
+
 
             ## assert that kubernetes.job.completions did not report, since it is unset
             assert not wait_for(
-                p(has_datapoint, agent.fake_services, metric_name="kubernetes.job.completions"), timeout_seconds=3
-            ), f"metric kubernetes.job.completions should be report a value"
+                p(
+                    has_datapoint,
+                    agent.fake_services,
+                    metric_name="kubernetes.job.completions",
+                ),
+                timeout_seconds=3,
+            ), "metric kubernetes.job.completions should be report a value"
+
 
             assert wait_for(
                 p(
@@ -391,10 +418,7 @@ def get_current_container_status(container_state):
         return "running"
     if container_state.terminated:
         return "terminated"
-    if container_state.waiting:
-        return "waiting"
-
-    return None
+    return "waiting" if container_state.waiting else None
 
 
 @pytest.mark.kubernetes

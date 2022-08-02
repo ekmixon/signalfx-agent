@@ -82,11 +82,7 @@ def test_hadoop_default(version):
         <repo_root>/test-services/hadoop
     docker push quay.io/signalfx/hadoop-test:<version>
     """
-    with run_container(
-        "quay.io/signalfx/hadoop-test:%s" % version, hostname="hadoop-master"
-    ) as hadoop_master, run_container(
-        "quay.io/signalfx/hadoop-test:%s" % version, hostname="hadoop-worker1"
-    ) as hadoop_worker1:
+    with run_container(f"quay.io/signalfx/hadoop-test:{version}", hostname="hadoop-master") as hadoop_master, run_container(f"quay.io/signalfx/hadoop-test:{version}", hostname="hadoop-worker1") as hadoop_worker1:
         host = start_hadoop(hadoop_master, hadoop_worker1)
 
         # start the agent with hadoop config

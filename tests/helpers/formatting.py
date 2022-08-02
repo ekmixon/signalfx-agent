@@ -32,7 +32,7 @@ def print_dp_or_event(dp_or_event):
         if dims:
             str_dims = " ["
             for dim in sorted(dims, key=lambda dim: dim.key):
-                str_dims += dim.key + "=" + dim.value + "; "
+                str_dims += f"{dim.key}={dim.value}; "
             str_dims = str_dims.rstrip("; ") + "]"
         return str_dims
 
@@ -49,14 +49,14 @@ def print_dp_or_event(dp_or_event):
     str_dp_or_event = ""
     if isinstance(dp_or_event, sf_pbuf.DataPoint):
         str_dp_or_event = dp_or_event.metric
-        str_dp_or_event += " (" + get_metric_type(dp_or_event.metricType) + ")"
+        str_dp_or_event += f" ({get_metric_type(dp_or_event.metricType)})"
         str_dp_or_event += _get_pretty_dims(dp_or_event.dimensions)
-        str_dp_or_event += " = " + _get_pretty_value(dp_or_event.value)
+        str_dp_or_event += f" = {_get_pretty_value(dp_or_event.value)}"
     else:
         str_dp_or_event = dp_or_event.eventType
-        str_dp_or_event += " (" + _get_event_category(dp_or_event.category) + ")"
+        str_dp_or_event += f" ({_get_event_category(dp_or_event.category)})"
         str_dp_or_event += _get_pretty_dims(dp_or_event.dimensions)
-    str_dp_or_event += " (" + str(int(dp_or_event.timestamp) / 1000) + ")"
+    str_dp_or_event += f" ({str(int(dp_or_event.timestamp) / 1000)})"
     if hasattr(dp_or_event, "properties"):
         str_dp_or_event += _get_pretty_props(dp_or_event.properties)
     print(str_dp_or_event)

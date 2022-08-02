@@ -37,9 +37,11 @@ def _make_fake_ingest(datapoint_queue, events, spans, save_datapoints, save_even
 
     @app.middleware("request")
     async def compress_request(request):
-        if "Content-Encoding" in request.headers:
-            if "gzip" in request.headers["Content-Encoding"]:
-                request.body = gzip.decompress(request.body)
+        if (
+            "Content-Encoding" in request.headers
+            and "gzip" in request.headers["Content-Encoding"]
+        ):
+            request.body = gzip.decompress(request.body)
 
     @app.post("/v2/datapoint")
     async def handle_datapoints(request):
@@ -82,10 +84,17 @@ def _add_fake_dimension_api(app, dims):
     @app.get("/v2/dimension/<key>/<value>")
     async def get_dim(_, key, value):
         dim = dims.get(key, {}).get(value)
-        if not dim:
-            return response.json({}, status=404)
-        return response.json(
-            {"key": key, "value": value, "customProperties": dim.get("customProperties"), "tags": dim.get("tags")}
+        return (
+            response.json(
+                {
+                    "key": key,
+                    "value": value,
+                    "customProperties": dim.get("customProperties"),
+                    "tags": dim.get("tags"),
+                }
+            )
+            if dim
+            else response.json({}, status=404)
         )
 
     @app.put("/v2/dimension/<key>/<value>")
@@ -220,9 +229,11 @@ def _make_fake_splunk_hec(entries):
 
     @app.middleware("request")
     async def compress_request(request):
-        if "Content-Encoding" in request.headers:
-            if "gzip" in request.headers["Content-Encoding"]:
-                request.body = gzip.decompress(request.body)
+        if (
+            "Content-Encoding" in request.headers
+            and "gzip" in request.headers["Content-Encoding"]
+        ):
+            request.body = gzip.decompress(request.body)
 
     @app.post("/services/collector")
     async def handle_entries(request):

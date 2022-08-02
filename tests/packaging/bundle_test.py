@@ -61,10 +61,13 @@ def test_bundle(request, base_image):
         with run_init_system_image(base_image, command="/usr/bin/tail -f /dev/null") as [cont, backend]:
             copy_file_into_container(bundle_path, cont, "/opt/bundle.tar.gz")
 
-            code, output = cont.exec_run(f"tar -xf /opt/bundle.tar.gz -C /opt")
+            code, output = cont.exec_run("tar -xf /opt/bundle.tar.gz -C /opt")
             assert code == 0, f"Could not untar bundle: {output}"
 
-            code, output = cont.exec_run(f"/opt/signalfx-agent/bin/patch-interpreter /opt/signalfx-agent")
+            code, output = cont.exec_run(
+                "/opt/signalfx-agent/bin/patch-interpreter /opt/signalfx-agent"
+            )
+
             assert code == 0, f"Could not patch interpreter: {output}"
 
             write_agent_config(cont, activemq_container)
@@ -106,14 +109,16 @@ def test_bundle_non_root_user(request, base_image):
 
             copy_file_into_container(bundle_path, cont, "/opt/bundle.tar.gz")
 
-            code, output = cont.exec_run(f"tar -xf /opt/bundle.tar.gz -C /opt")
+            code, output = cont.exec_run("tar -xf /opt/bundle.tar.gz -C /opt")
             assert code == 0, f"Could not untar bundle: {output}"
 
             cont.exec_run("chown -R test-user:test-user /opt/signalfx-agent")
 
             code, output = cont.exec_run(
-                f"/opt/signalfx-agent/bin/patch-interpreter /opt/signalfx-agent", user="test-user"
+                "/opt/signalfx-agent/bin/patch-interpreter /opt/signalfx-agent",
+                user="test-user",
             )
+
             assert code == 0, f"Could not patch interpreter: {output}"
 
             write_agent_config(cont, activemq_container)
@@ -132,7 +137,10 @@ def test_bundle_non_root_user(request, base_image):
             )
 
             try:
-                assert is_agent_running_as_non_root(cont, user="test-user"), f"agent is not running as test-user"
+                assert is_agent_running_as_non_root(
+                    cont, user="test-user"
+                ), "agent is not running as test-user"
+
                 assert wait_for(
                     p(has_datapoint, backend, metric_name="cpu.utilization"), timeout_seconds=10
                 ), "Python metadata datapoint didn't come through"

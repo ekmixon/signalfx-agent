@@ -56,8 +56,12 @@ class Output(object):
         # to the agent.
         self.ready_event.wait()
 
-        out = {}
-        for typ, group in groupby(sorted(datapoints, key=self._datapoint_key_func), self._datapoint_key_func):
-            out[typ] = [dp.as_dict() for dp in group]
+        out = {
+            typ: [dp.as_dict() for dp in group]
+            for typ, group in groupby(
+                sorted(datapoints, key=self._datapoint_key_func),
+                self._datapoint_key_func,
+            )
+        }
 
         self.output_writer.send_msg(MSG_TYPE_DATAPOINT_LIST, out)

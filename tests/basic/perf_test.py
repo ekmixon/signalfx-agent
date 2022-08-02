@@ -52,8 +52,8 @@ def test_service_correlation():
 
     port = random.randint(5001, 20000)
     with Agent.run(
-        dedent(
-            f"""
+            dedent(
+                f"""
         hostname: "testhost"
         writer:
           maxRequests: 100
@@ -65,21 +65,21 @@ def test_service_correlation():
           - type: trace-forwarder
             listenAddress: localhost:{port}
         """
-        ),
-        profiling=True,
-        debug=False,
-        # This test generates a lot of spans and datapoints that we never check.
-        # We must disable the storage of this data in the "fake" backend
-        # or this test will consume a lot of (too much) memory.
-        backend_options={"save_datapoints": False, "save_spans": False, "save_events": False},
-    ) as agent:
+            ),
+            profiling=True,
+            debug=False,
+            # This test generates a lot of spans and datapoints that we never check.
+            # We must disable the storage of this data in the "fake" backend
+            # or this test will consume a lot of (too much) memory.
+            backend_options={"save_datapoints": False, "save_spans": False, "save_events": False},
+        ) as agent:
         assert wait_for(p(tcp_port_open_locally, port)), "trace forwarder port never opened!"
 
-        environment_names = {f"env-{e}" for e in range(0, environment_count)}
-        service_names = {f"service-{s}" for s in range(0, service_count)}
+        environment_names = {f"env-{e}" for e in range(environment_count)}
+        service_names = {f"service-{s}" for s in range(service_count)}
 
         # send spans from a mixture of all environments/services
-        for i in range(0, total_span_count):
+        for i in range(total_span_count):
             # rotate through the environment and service names
             environment_name = f"env-{i % environment_count}"
             service_name = f"service-{i % service_count}"
@@ -147,8 +147,8 @@ def test_service_correlation_api_down():
 
     port = random.randint(5001, 20000)
     with Agent.run(
-        dedent(
-            f"""
+            dedent(
+                f"""
         hostname: "testhost"
         writer:
           maxRequests: 100
@@ -162,23 +162,23 @@ def test_service_correlation_api_down():
           - type: trace-forwarder
             listenAddress: localhost:{port}
         """
-        ),
-        profiling=True,
-        debug=False,
-        # This test generates a lot of spans and datapoints that we never check.
-        # We must disable the storage of this data in the "fake" backend
-        # or this test will consume a lot of (too much) memory.
-        backend_options={
-            "save_datapoints": False,
-            "save_spans": False,
-            "save_events": False,
-            "correlation_api_status_code": 500,
-        },
-    ) as agent:
+            ),
+            profiling=True,
+            debug=False,
+            # This test generates a lot of spans and datapoints that we never check.
+            # We must disable the storage of this data in the "fake" backend
+            # or this test will consume a lot of (too much) memory.
+            backend_options={
+                "save_datapoints": False,
+                "save_spans": False,
+                "save_events": False,
+                "correlation_api_status_code": 500,
+            },
+        ) as agent:
         assert wait_for(p(tcp_port_open_locally, port)), "trace forwarder port never opened!"
 
         # send spans from a mixture of all environments/services
-        for i in range(0, total_span_count):
+        for i in range(total_span_count):
             # rotate through the environment and service names
             environment_name = f"env-{i % environment_count}"
             service_name = f"service-{i % service_count}"

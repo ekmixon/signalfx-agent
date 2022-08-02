@@ -140,10 +140,7 @@ def run_puppet_agent(cont, init_system, backend, monitors, agent_version, stage,
 )
 @pytest.mark.parametrize("puppet_release", LINUX_PUPPET_RELEASES)
 def test_puppet(base_image, init_system, puppet_release):
-    if (base_image, init_system) in DEB_DISTROS:
-        distro_type = "deb"
-    else:
-        distro_type = "rpm"
+    distro_type = "deb" if (base_image, init_system) in DEB_DISTROS else "rpm"
     buildargs = {"PUPPET_RELEASE": ""}
     if puppet_release != "latest":
         buildargs = {"PUPPET_RELEASE": puppet_release}
@@ -224,11 +221,11 @@ def run_win_puppet_setup(puppet_version):
     assert has_choco(), "choco not installed!"
     uninstall_win_agent()
     if puppet_version == "latest":
-        run_win_command(f"choco upgrade -y -f puppet-agent")
+        run_win_command("choco upgrade -y -f puppet-agent")
     else:
         run_win_command(f"choco upgrade -y -f puppet-agent --version {puppet_version}")
     if WIN_PUPPET_BIN_DIR not in os.environ.get("PATH"):
-        os.environ["PATH"] = WIN_PUPPET_BIN_DIR + ";" + os.environ.get("PATH")
+        os.environ["PATH"] = f"{WIN_PUPPET_BIN_DIR};" + os.environ.get("PATH")
     if os.path.isdir(WIN_PUPPET_MODULE_DEST_DIR):
         shutil.rmtree(WIN_PUPPET_MODULE_DEST_DIR)
     shutil.copytree(WIN_PUPPET_MODULE_SRC_DIR, WIN_PUPPET_MODULE_DEST_DIR)

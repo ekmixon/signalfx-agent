@@ -74,4 +74,4 @@ class SimpleScheduler(object):
         for thr in self.threads:
             thr.join(max(0, wait_until - time.time()))
             if thr.is_alive():
-                raise RuntimeError("Thread %s did not stop in time" % thr.ident)
+                raise RuntimeError(f"Thread {thr.ident} did not stop in time")

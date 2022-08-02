@@ -7,7 +7,10 @@ def load_python_module(sys_paths, import_name):
     Imports a Python module by name.  This will only have effect the first time
     it is called and subsequent calls will do nothing.
     """
-    assert isinstance(sys_paths, (tuple, list)), "%s is not a list or tuple" % sys_paths
+    assert isinstance(
+        sys_paths, (tuple, list)
+    ), f"{sys_paths} is not a list or tuple"
+
 
     for path in reversed(sys_paths):
         if path not in sys.path:

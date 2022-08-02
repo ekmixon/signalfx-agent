@@ -39,7 +39,12 @@ def test_rabbitmq():
                 p(has_datapoint_with_dim, agent.fake_services, "plugin", "rabbitmq")
             ), "Didn't get rabbitmq datapoints"
             assert wait_for(
-                p(has_datapoint_with_dim, agent.fake_services, "plugin_instance", "%s-15672" % host)
+                p(
+                    has_datapoint_with_dim,
+                    agent.fake_services,
+                    "plugin_instance",
+                    f"{host}-15672",
+                )
             ), "Didn't get expected plugin_instance dimension"
 
 
@@ -49,8 +54,8 @@ def test_rabbitmq_broker_name():
         assert wait_for(p(tcp_socket_open, host, 15672), 60), "service didn't start"
 
         with Agent.run(
-            dedent(
-                f"""
+                    dedent(
+                        f"""
             monitors:
               - type: collectd/rabbitmq
                 host: {host}
@@ -61,10 +66,15 @@ def test_rabbitmq_broker_name():
                 collectNodes: true
                 collectChannels: true
             """
-            )
-        ) as agent:
+                    )
+                ) as agent:
             assert wait_for(
-                p(has_datapoint_with_dim, agent.fake_services, "plugin_instance", "%s-guest" % host)
+                p(
+                    has_datapoint_with_dim,
+                    agent.fake_services,
+                    "plugin_instance",
+                    f"{host}-guest",
+                )
             ), "Didn't get expected plugin_instance dimension"
 
 

@@ -12,8 +12,8 @@ def test_writer_no_skipped_datapoints():
     num_metrics = 1000
     with run_service("dpgen", environment={"NUM_METRICS": num_metrics}) as dpgen_cont:
         with Agent.run(
-            dedent(
-                f"""
+                    dedent(
+                        f"""
              writer:
                maxRequests: 1
                datapointMaxBatchSize: 100
@@ -24,15 +24,15 @@ def test_writer_no_skipped_datapoints():
                port: 3000
                intervalSeconds: 1
         """
-            )
-        ) as agent:
+                    )
+                ) as agent:
             time.sleep(10)
             dpgen_cont.remove(force=True, v=True)
             time.sleep(2)
 
             assert agent.fake_services.datapoints, "Didn't get any datapoints"
             assert len(agent.fake_services.datapoints) % num_metrics == 0, "Didn't get 1000n datapoints"
-            for i in range(0, num_metrics):
+            for i in range(num_metrics):
                 assert (
                     len(
                         [
@@ -52,8 +52,8 @@ def test_splunk_output():
     num_metrics = 1000
     with run_service("dpgen", environment={"NUM_METRICS": num_metrics}) as dpgen_cont:
         with Agent.run(
-            dedent(
-                f"""
+                    dedent(
+                        f"""
              signalFxRealm: null
 
              writer:
@@ -66,16 +66,16 @@ def test_splunk_output():
                port: 3000
                intervalSeconds: 1
         """
-            ),
-            backend_options={"splunk_hec_port": 0},
-        ) as agent:
+                    ),
+                    backend_options={"splunk_hec_port": 0},
+                ) as agent:
             time.sleep(10)
             dpgen_cont.remove(force=True, v=True)
             time.sleep(2)
 
             assert agent.fake_services.splunk_entries, "Didn't get any splunk entries"
             assert len(agent.fake_services.splunk_entries) % num_metrics == 0, "Didn't get 1000n entries"
-            for i in range(0, num_metrics):
+            for i in range(num_metrics):
                 assert (
                     len(
                         [

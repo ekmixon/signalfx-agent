@@ -83,7 +83,7 @@ def test_kubelet_stats_extra_pod_metric(k8s_cluster):
 def test_kubelet_stats_extra_pod_metric_group(k8s_cluster):
     _skip_if_1_18_or_newer(k8s_cluster)
 
-    config = f"""
+    config = """
      monitors:
       - type: kubelet-stats
         kubeletAPI:
@@ -91,6 +91,7 @@ def test_kubelet_stats_extra_pod_metric_group(k8s_cluster):
           authType: serviceAccount
         extraGroups: [podEphemeralStats]
      """
+
     with k8s_cluster.run_agent(agent_yaml=config) as agent:
         for metric in METADATA.metrics_by_group.get("podEphemeralStats", []):
             assert wait_for(p(has_datapoint, agent.fake_services, metric_name=metric), timeout_seconds=100)

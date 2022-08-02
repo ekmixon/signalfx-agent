@@ -70,15 +70,15 @@ LISTEN_LOG_RE = re.compile(r"Listening for Logstash events on .*:(\d+)")
 @pytest.mark.parametrize("version", ["7.3.0", "5.6.16"])
 def test_logstash_tcp_server(version):
     with run_container(
-        f"docker.elastic.co/logstash/logstash:{version}",
-        environment={"XPACK_MONITORING_ENABLED": "false", "CONFIG_RELOAD_AUTOMATIC": "true"},
-    ) as logstash_cont:
+            f"docker.elastic.co/logstash/logstash:{version}",
+            environment={"XPACK_MONITORING_ENABLED": "false", "CONFIG_RELOAD_AUTOMATIC": "true"},
+        ) as logstash_cont:
         agent_host = get_host_ip()
 
         copy_file_content_into_container(SAMPLE_EVENTS, logstash_cont, "tmp/events.log")
 
         config = dedent(
-            f"""
+            """
             monitors:
               - type: logstash-tcp
                 mode: server
@@ -86,6 +86,7 @@ def test_logstash_tcp_server(version):
                 port: 0
             """
         )
+
 
         with Agent.run(config) as agent:
             log_match = wait_for_value(lambda: LISTEN_LOG_RE.search(agent.output))

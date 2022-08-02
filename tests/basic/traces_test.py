@@ -126,8 +126,8 @@ def test_tracing_load():
     """
     port = random.randint(5001, 20000)
     with Agent.run(
-        dedent(
-            f"""
+            dedent(
+                f"""
         hostname: "testhost"
         writer:
             sendTraceHostCorrelationMetrics: true
@@ -138,10 +138,10 @@ def test_tracing_load():
           - type: trace-forwarder
             listenAddress: localhost:{port}
     """
-        )
-    ) as agent:
+            )
+        ) as agent:
         assert wait_for(p(tcp_port_open_locally, port)), "trace forwarder port never opened!"
-        for i in range(0, 100):
+        for i in range(100):
             spans = _test_trace()
             spans[0]["localEndpoint"]["serviceName"] += f"-{i}"
             spans[1]["localEndpoint"]["serviceName"] += f"-{i}"
@@ -155,7 +155,7 @@ def test_tracing_load():
 
             assert resp.status_code == 200
 
-        for i in range(0, 100):
+        for i in range(100):
             assert wait_for(
                 p(
                     has_datapoint,
@@ -192,7 +192,7 @@ def test_tracing_load():
             p(has_datapoint, agent.fake_services, metric_name="sf.int.service.heartbeat"), timeout_seconds=5
         ), "Got infra correlation metric when it should have been expired"
 
-        for i in range(0, 100):
+        for i in range(100):
             assert wait_for(
                 p(
                     has_no_dim_set_prop,

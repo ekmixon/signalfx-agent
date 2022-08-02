@@ -18,15 +18,14 @@ class Metadata:
     @classmethod
     def from_package(cls, monitor_package_path, mon_type=None):
         with open(
-            REPO_ROOT_DIR / "pkg" / "monitors" / monitor_package_path / "metadata.yaml", "r", encoding="utf-8"
-        ) as fd:
+                REPO_ROOT_DIR / "pkg" / "monitors" / monitor_package_path / "metadata.yaml", "r", encoding="utf-8"
+            ) as fd:
             doc = yaml.safe_load(fd)
             monitor = _find_monitor(doc["monitors"], mon_type)
 
             metrics_by_group = defaultdict(set)
             for metric, info in (monitor.get("metrics") or {}).items():
-                group = info.get("group")
-                if group:
+                if group := info.get("group"):
                     metrics_by_group[group].add(metric)
 
             return cls(

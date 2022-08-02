@@ -35,7 +35,7 @@ def test_telegraf_statsd():
         port = int(regex_results.groups()[2])
 
         # send datapoints to the statsd listener
-        for _ in range(0, 10):
+        for _ in range(10):
             send_udp_message(host, port, "statsd.test.metric:55555|g|#dimension1:value1,dimension2:value2")
             time.sleep(1)
 
@@ -46,7 +46,7 @@ def test_telegraf_statsd():
         ), "datapoint didn't have datadog tag"
 
         # send datapoints to the statsd listener
-        for _ in range(0, 10):
+        for _ in range(10):
             send_udp_message(host, port, "dogstatsd.test.metric:55555|g|#dimension1:,dimension2:value2")
             time.sleep(1)
 

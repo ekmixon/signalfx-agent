@@ -33,12 +33,21 @@ def configure_kong(kong_admin, kong_version, echo):
     if kong_version >= "0.13-centos":
         service_paths = ["sOne", "sTwo", "sThree"]
         for service_path in service_paths:
-            service = post(kong_admin + "/services", json=dict(name=service_path, url=f"http://{echo}:8080/echo"))
+            service = post(
+                f"{kong_admin}/services",
+                json=dict(name=service_path, url=f"http://{echo}:8080/echo"),
+            )
+
             assert service.status_code == 201
             object_ids.add(service.json()["id"])
             route = post(
-                kong_admin + "/routes", json=dict(service=dict(id=service.json()["id"]), paths=["/" + service_path])
+                f"{kong_admin}/routes",
+                json=dict(
+                    service=dict(id=service.json()["id"]),
+                    paths=[f"/{service_path}"],
+                ),
             )
+
             assert route.status_code == 201
             object_ids.add(route.json()["id"])
 
@@ -47,13 +56,18 @@ def configure_kong(kong_admin, kong_version, echo):
         api_paths = ["aOne", "aTwo", "aThree"]
         for api_path in api_paths:
             api = post(
-                kong_admin + "/apis",
-                json=dict(name=api_path, uris=["/" + api_path], upstream_url=f"http://{echo}:8080/echo"),
+                f"{kong_admin}/apis",
+                json=dict(
+                    name=api_path,
+                    uris=[f"/{api_path}"],
+                    upstream_url=f"http://{echo}:8080/echo",
+                ),
             )
+
             assert api.status_code == 201
             object_ids.add(api.json()["id"])
 
-    kong_plugins = kong_admin + "/plugins"
+    kong_plugins = f"{kong_admin}/plugins"
     enable = post(kong_plugins, json=dict(name="signalfx"))
     assert enable.status_code == 201
     return service_paths + api_paths, object_ids

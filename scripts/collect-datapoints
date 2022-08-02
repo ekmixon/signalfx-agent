@@ -21,10 +21,12 @@ from tests.helpers.fake_backend import start
 
 def run(collect_time_seconds=30):
     with start(ingest_port=4567, api_port=4568) as fake_backend:
-        print("Waiting for first datapoint on %s" % (fake_backend.ingest_url,), file=sys.stderr)
-        while True:
-            if fake_backend.datapoints:
-                break
+        print(
+            f"Waiting for first datapoint on {fake_backend.ingest_url}",
+            file=sys.stderr,
+        )
+
+        while not fake_backend.datapoints:
             time.sleep(1)
         print("Waiting %d seconds for datapoints" % (collect_time_seconds,), file=sys.stderr)
         time.sleep(collect_time_seconds)

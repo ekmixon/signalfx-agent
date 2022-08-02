@@ -68,7 +68,7 @@ def get_agent_logs(container, init_system):
     try:
         _, output = container.exec_run(LOG_COMMAND[init_system])
     except docker.errors.APIError as e:
-        print("Error getting agent logs: %s" % e)
+        print(f"Error getting agent logs: {e}")
         return ""
     return output
 
@@ -103,12 +103,12 @@ def get_package_to_test(output_dir, extension):
 # the fake backend.
 @contextmanager
 def socat_https_proxy(container, target_host, target_port, source_host, bind_addr):
-    cert = "/%s.cert" % source_host
-    key = "/%s.key" % source_host
+    cert = f"/{source_host}.cert"
+    key = f"/{source_host}.key"
 
     socat_bin = DOCKERFILES_DIR / "socat"
     stopped = False
-    socket_path = "/tmp/scratch/%s-%s" % (source_host, container.id[:12])
+    socket_path = f"/tmp/scratch/{source_host}-{container.id[:12]}"
 
     # Keep the socat instance in the container running across container
     # restarts
@@ -119,10 +119,11 @@ def socat_https_proxy(container, target_host, target_port, source_host, bind_add
                     [
                         "socat",
                         "-v",
-                        "OPENSSL-LISTEN:443,cert=%s,key=%s,verify=0,bind=%s,fork" % (cert, key, bind_addr),
-                        "UNIX-CONNECT:%s" % sock,
+                        f"OPENSSL-LISTEN:443,cert={cert},key={key},verify=0,bind={bind_addr},fork",
+                        f"UNIX-CONNECT:{sock}",
                     ]
                 )
+
             except docker.errors.APIError:
                 print("socat died, restarting...")
                 time.sleep(0.1)
@@ -132,12 +133,18 @@ def socat_https_proxy(container, target_host, target_port, source_host, bind_add
     # pylint: disable=consider-using-with
     proc = retry_on_ebadf(
         lambda: subprocess.Popen(
-            [socat_bin, "-v", "UNIX-LISTEN:%s,fork" % socket_path, "TCP4:%s:%d" % (target_host, target_port)],
+            [
+                socat_bin,
+                "-v",
+                f"UNIX-LISTEN:{socket_path},fork",
+                "TCP4:%s:%d" % (target_host, target_port),
+            ],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             close_fds=False,
         )
     )()
+
 
     get_local_out = pull_from_reader_in_background(proc.stdout)
 
@@ -162,11 +169,8 @@ def run_init_system_image(
     buildargs=None,
 ):  # pylint: disable=too-many-arguments
     image_id = retry(lambda: build_base_image(base_image, path, dockerfile, buildargs), docker.errors.BuildError)
-    print("Image ID: %s" % image_id)
-    if with_socat:
-        backend_ip = "127.0.0.1"
-    else:
-        backend_ip = get_host_ip()
+    print(f"Image ID: {image_id}")
+    backend_ip = "127.0.0.1" if with_socat else get_host_ip()
     with fake_backend.start(ip_addr=backend_ip) as backend:
         container_options = {
             # Init systems running in the container want permissions
@@ -208,7 +212,7 @@ def run_init_system_image(
 @retry_on_ebadf
 def is_agent_running_as_non_root(container, user="signalfx-agent"):
     code, output = container.exec_run(f"pgrep -u {user} signalfx-agent")
-    print("pgrep check: %s" % output)
+    print(f"pgrep check: {output}")
     return code == 0
 
 
@@ -218,8 +222,11 @@ def get_agent_version(cont):
     output = output.decode("utf-8").strip()
     assert code == 0, "command 'signalfx-agent -version' failed:\n%s" % output
     match = re.match("^.+?: (.+)?,", output)
-    assert match and match.group(1).strip(), "failed to parse agent version from command output:\n%s" % output
-    return match.group(1).strip()
+    assert match and match[1].strip(), (
+        "failed to parse agent version from command output:\n%s" % output
+    )
+
+    return match[1].strip()
 
 
 def run_win_command(cmd, returncodes=None, shell=True, **kwargs):
@@ -239,8 +246,11 @@ def get_win_agent_version(agent_path=WIN_AGENT_PATH):
     proc = run_win_command([agent_path, "-version"])
     output = proc.stdout.decode("utf-8")
     match = re.match("^.+?: (.+)?,", output)
-    assert match and match.group(1).strip(), "failed to parse agent version from command output:\n%s" % output
-    return match.group(1).strip()
+    assert match and match[1].strip(), (
+        "failed to parse agent version from command output:\n%s" % output
+    )
+
+    return match[1].strip()
 
 
 def running_in_azure_pipelines():
@@ -252,10 +262,7 @@ def has_choco():
 
 
 def uninstall_win_agent(msi_path=None, delete_config=True):
-    args = "-delete_config 0"
-    if delete_config:
-        args = "-delete_config 1"
-
+    args = "-delete_config 1" if delete_config else "-delete_config 0"
     if msi_path:
         args = f"{args} -msi_path {msi_path}"
 
@@ -301,8 +308,8 @@ def verify_override_files(cont, init_system, user, group=None):
 
         override_path = "/etc/systemd/system/signalfx-agent.service.d/service-owner.conf"
         expected = f"[Service]\nUser={user}\nGroup={group}"
-        assert expected == get_container_file_content(cont, override_path).strip()
     else:
         override_path = "/etc/default/signalfx-agent"
         expected = f"user={user}\ngroup={group}"
-        assert expected == get_container_file_content(cont, override_path).strip()
+
+    assert expected == get_container_file_content(cont, override_path).strip()

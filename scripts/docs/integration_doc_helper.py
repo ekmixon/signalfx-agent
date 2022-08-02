@@ -165,7 +165,7 @@ def sync_agent_docs():
             sync_markdown_files(full_file_path)
 
     for file in REQUIRED_AGENT_DOCS["md_files"]:
-        full_file_path = AGENT_DOCS / ("%s.md" % file)
+        full_file_path = AGENT_DOCS / f"{file}.md"
         sync_markdown_files(full_file_path)
 
 

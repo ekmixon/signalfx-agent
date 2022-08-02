@@ -39,11 +39,12 @@ def test_config_from_annotations(k8s_cluster):
         )
     )
     with k8s_cluster.create_resources([nginx_with_annotations]):
-        config = f"""
+        config = """
             observers:
              - type: k8s-api
             monitors: []
         """
+
         with k8s_cluster.run_agent(config) as agent:
             assert wait_for(p(has_datapoint, agent.fake_services, dimensions={"plugin": "nginx", "source": "myapp"}))
             assert ensure_always(

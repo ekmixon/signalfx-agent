@@ -37,20 +37,12 @@ def run_kafka(version, **kwargs):
     with run_container("zookeeper:3.5") as zookeeper:
         zkhost = container_ip(zookeeper)
         assert wait_for(p(tcp_socket_open, zkhost, 2181), 60), "zookeeper didn't start"
-        with run_service(
-            "kafka",
-            environment={f"KAFKA_ZOOKEEPER_CONNECT": f"{zkhost}:2181", "START_AS": "broker"},
-            buildargs={"KAFKA_VERSION": version},
-            **args,
-        ) as kafka_container:
+        with run_service("kafka", environment={"KAFKA_ZOOKEEPER_CONNECT": f"{zkhost}:2181", "START_AS": "broker"}, buildargs={"KAFKA_VERSION": version}, **args) as kafka_container:
             kafka_host = container_ip(kafka_container)
             assert wait_for(p(tcp_socket_open, kafka_host, 9092), 60), "kafka broker didn't start"
             assert wait_for(p(tcp_socket_open, kafka_host, 7099), 60), "kafka broker jmx didn't start"
 
-            with run_container(
-                kafka_container.image.id,
-                environment={"START_AS": "create-topic", f"KAFKA_ZOOKEEPER_CONNECT": f"{zkhost}:2181"},
-            ) as kafka_topic:
+            with run_container(kafka_container.image.id, environment={"START_AS": "create-topic", "KAFKA_ZOOKEEPER_CONNECT": f"{zkhost}:2181"}) as kafka_topic:
                 assert kafka_topic.wait(timeout=DEFAULT_TIMEOUT)["StatusCode"] == 0, "unable to create kafka topic"
 
             yield kafka_container

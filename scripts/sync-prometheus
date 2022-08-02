@@ -18,11 +18,7 @@ meta = Path(sys.argv[1])
 
 meta.parent.mkdir(parents=True, exist_ok=True)
 
-if meta.exists():
-    doc = yaml.round_trip_load(meta.read_text())
-else:
-    doc = {}
-
+doc = yaml.round_trip_load(meta.read_text()) if meta.exists() else {}
 monitors = doc.setdefault("monitors", [])
 
 if len(monitors) > 1:

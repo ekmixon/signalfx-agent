@@ -48,7 +48,7 @@ def test_collectd_dogstatsd():
             assert wait_for(p(udp_port_open_locally, port))
 
             # send datapoints to the dogstatsd listener
-            for _ in range(0, 10):
+            for _ in range(10):
                 send_udp_message(host, port, "dogstatsd.test.metric:55555|g|#dimension1:value1,dimension2:value2")
                 time.sleep(1)
 

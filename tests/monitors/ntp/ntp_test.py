@@ -33,16 +33,17 @@ def test_default_metrics():
 def test_min_interval():
     # Config to get every possible dimensions (and metrics so) to OK
     with Agent.run(
-        f"""
+            f"""
         monitors:
         - type: ntp
           host: {HOST}
         """
-    ) as agent:
+        ) as agent:
         # configured host should be in dimension of metric
         assert wait_for(
             p(has_datapoint_with_dim, agent.fake_services, MONITOR, HOST)
-        ), "Didn't get ntp datapoints with {}:{} dimension".format(MONITOR, HOST)
+        ), f"Didn't get ntp datapoints with {MONITOR}:{HOST} dimension"
+
         # should have only one metric while default interval should be enforced
         if len(METADATA.default_metrics) != len(agent.fake_services.datapoints):
             assert False

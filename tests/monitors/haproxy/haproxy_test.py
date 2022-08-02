@@ -38,15 +38,13 @@ def test_haproxy_default_metrics_from_stats_page(version):
 @pytest.mark.parametrize("version", ["1.8"])
 def test_haproxy_default_metrics_from_stats_page_by_discovery_rule(version):
     with run_service("haproxy", buildargs={"HAPROXY_VERSION": version}, name="haproxy"):
-        with Agent.run(
-            f"""
+        with Agent.run("""
            observers:
            - type: docker
            monitors:
            - type: haproxy
              discoveryRule: 'container_name == "haproxy"'
-           """
-        ) as agent:
+           """) as agent:
             verify(agent, EXPECTED_DEFAULTS - EXPECTED_DEFAULTS_FROM_SOCKET, 10)
 
 

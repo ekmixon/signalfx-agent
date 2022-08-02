@@ -161,14 +161,14 @@ METADATA = Metadata.from_package("docker")
 
 def test_docker_default():
     with run_service(
-        "elasticsearch/6.6.1"
-    ):  # just get a container that does some block io running so we have some stats
+            "elasticsearch/6.6.1"
+        ):  # just get a container that does some block io running so we have some stats
         metrics = METADATA.default_metrics - {
             "blkio.io_service_bytes_recursive.read",
             "blkio.io_service_bytes_recursive.write",
         }
         run_agent_verify(
-            f"""
+            """
             monitors:
             - type: docker-container-stats
             """,
@@ -222,16 +222,14 @@ ENHANCED_METRICS = METADATA.all_metrics - {
 
 def test_docker_enhanced():
     with run_service(
-        "elasticsearch/6.6.1"
-    ):  # just get a container that does some block io running so we have some stats
-        with Agent.run(
-            f"""
+            "elasticsearch/6.6.1"
+        ):  # just get a container that does some block io running so we have some stats
+        with Agent.run("""
             monitors:
             - type: docker-container-stats
               enableExtraBlockIOMetrics: true
               enableExtraCPUMetrics: true
               enableExtraMemoryMetrics: true
               enableExtraNetworkMetrics: true
-            """
-        ) as agent:
+            """) as agent:
             verify_expected_is_subset(agent, ENHANCED_METRICS)

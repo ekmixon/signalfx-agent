@@ -68,19 +68,18 @@ def load_monitor(config, output):
 
     logger.debug("Appending %s to Python path", python_path)
     mod = load_python_module(python_path, os.path.splitext(module_file)[0])
-    mon_cls = getattr(mod, "Monitor", None)
-    if mon_cls:
+    if mon_cls := getattr(mod, "Monitor", None):
         logger.info("Loaded class Monitor from %s", script_file_path)
         inst = mon_cls(output)
     else:
         logger.info("Loaded 'run' function from %s", script_file_path)
-        run_func = getattr(mod, "run", None)
-        if not run_func:
+        if run_func := getattr(mod, "run", None):
+            inst = SimpleMonitor(run_func, output)
+
+        else:
             raise ValueError(
                 "Could not fine either a 'run' function or 'Montior' class in Python script '%s'" % (script_file_path,)
             )
-        inst = SimpleMonitor(run_func, output)
-
     if not hasattr(inst, "configure"):
         raise ValueError("Monitor class in %s doesn't have a configure method" % script_file_path)
     return [getattr(inst, "configure"), getattr(inst, "shutdown", None)]

@@ -51,8 +51,8 @@ def _test_trace():
 def test_docker_container_spans_get_container_id_tag():
     port = random.randint(5001, 20000)
     with Agent.run(
-        dedent(
-            f"""
+            dedent(
+                f"""
         cluster: my-cluster
         writer:
           propertiesSendDelaySeconds: 1
@@ -63,8 +63,8 @@ def test_docker_container_spans_get_container_id_tag():
           - type: trace-forwarder
             listenAddress: 0.0.0.0:{port}
     """
-        )
-    ) as agent:
+            )
+        ) as agent:
         assert wait_for(p(tcp_port_open_locally, port)), "trace forwarder port never opened!"
         with run_service("curl", entrypoint=["tail", "-f", "/dev/null"]) as container:
             # This is purely to wait for the docker observer to have discovered
@@ -83,7 +83,7 @@ def test_docker_container_spans_get_container_id_tag():
                     json.dumps(_test_trace()),
                 ]
             )
-            assert exit_code == 0, "Curl command failed: " + str(out)
+            assert exit_code == 0, f"Curl command failed: {str(out)}"
 
             assert wait_for(
                 p(has_trace_span, agent.fake_services, tags={"env": "prod", "container_id": container.id})

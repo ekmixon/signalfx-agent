@@ -148,7 +148,10 @@ def has_resource(name, kind, api_client, namespace="default"):
     goes in the `kind` field of the k8s resource.
     """
     try:
-        getattr(api_client, "read_namespaced_" + camel_case_to_snake_case(kind))(name, namespace=namespace)
+        getattr(
+            api_client, f"read_namespaced_{camel_case_to_snake_case(kind)}"
+        )(name, namespace=namespace)
+
         return True
     except ApiException as e:
         if e.status == 404:
@@ -168,9 +171,11 @@ def create_resource(body, api_client, namespace=None, timeout=K8S_CREATE_TIMEOUT
     deleted = False
     while True:
         try:
-            resource = getattr(api_client, "create_namespaced_" + camel_case_to_snake_case(kind))(
-                body=body, namespace=namespace
-            )
+            resource = getattr(
+                api_client,
+                f"create_namespaced_{camel_case_to_snake_case(kind)}",
+            )(body=body, namespace=namespace)
+
         except kube_client.rest.ApiException as e:
             if e.status == 409:
                 if deleted:
@@ -192,9 +197,10 @@ def patch_resource(body, api_client, namespace=None, timeout=K8S_CREATE_TIMEOUT)
     kind = body["kind"]
     # The namespace in the resource body always takes precidence
     namespace = body.get("metadata", {}).get("namespace", namespace)
-    resource = getattr(api_client, "patch_namespaced_" + camel_case_to_snake_case(kind))(
-        name=name, body=body, namespace=namespace
-    )
+    resource = getattr(
+        api_client, f"patch_namespaced_{camel_case_to_snake_case(kind)}"
+    )(name=name, body=body, namespace=namespace)
+
     assert wait_for(
         p(has_resource, name, kind, api_client, namespace=namespace), timeout_seconds=timeout
     ), 'timed out waiting for %s "%s" to be patched!' % (kind, name)
@@ -204,11 +210,14 @@ def patch_resource(body, api_client, namespace=None, timeout=K8S_CREATE_TIMEOUT)
 def delete_resource(name, kind, api_client, namespace="default", timeout=K8S_DELETE_TIMEOUT):
     if not has_resource(name, kind, api_client, namespace=namespace):
         return
-    getattr(api_client, "delete_namespaced_" + camel_case_to_snake_case(kind))(
+    getattr(api_client, f"delete_namespaced_{camel_case_to_snake_case(kind)}")(
         name=name,
-        body=kube_client.V1DeleteOptions(grace_period_seconds=0, propagation_policy="Background"),
+        body=kube_client.V1DeleteOptions(
+            grace_period_seconds=0, propagation_policy="Background"
+        ),
         namespace=namespace,
     )
+
     assert wait_for(
         lambda: not has_resource(name, kind, api_client, namespace=namespace), timeout
     ), 'timed out waiting for %s "%s" to be deleted!' % (kind, name)
@@ -283,7 +292,7 @@ def daemonset_is_ready(name, namespace="default"):
     if not has_daemonset(name, namespace=namespace):
         return False
     status = api.read_namespaced_daemon_set_status(name, namespace=namespace).status
-    if status and status.number_ready and status.number_ready:
+    if status and status.number_ready:
         return status.number_ready == status.number_available
     return False
 
@@ -374,11 +383,11 @@ def get_all_pods(namespace=None):
     """
     api = kube_client.CoreV1Api()
     all_pods = api.list_pod_for_all_namespaces(watch=False)
-    pods = []
-    for pod in all_pods.items:
-        if not namespace or pod.metadata.namespace == namespace:
-            pods.append(pod)
-    return pods
+    return [
+        pod
+        for pod in all_pods.items
+        if not namespace or pod.metadata.namespace == namespace
+    ]
 
 
 def get_all_pods_starting_with_name(name, namespace=None):
@@ -391,11 +400,11 @@ def get_all_pods_starting_with_name(name, namespace=None):
     If `namespace` is None, returns list of all pods in the cluster.
     Otherwise, returns list of pods within `namespace`.
     """
-    pods = []
-    for pod in get_all_pods(namespace=namespace):
-        if pod.metadata.name.startswith(name):
-            pods.append(pod)
-    return pods
+    return [
+        pod
+        for pod in get_all_pods(namespace=namespace)
+        if pod.metadata.name.startswith(name)
+    ]
 
 
 def has_pod(name, namespace=None):
@@ -409,10 +418,9 @@ def has_pod(name, namespace=None):
     If `namespace` is None, returns True/False if any pod contains `name`.
     Otherwise, returns True/False if any pod within `namespace` contains `name`.
     """
-    for pod in get_all_pods(namespace=namespace):
-        if name in pod.metadata.name:
-            return True
-    return False
+    return any(
+        name in pod.metadata.name for pod in get_all_pods(namespace=namespace)
+    )
 
 
 def all_pods_have_ips(namespace="default"):
@@ -432,9 +440,7 @@ def all_pods_have_ips(namespace="default"):
         if not pod.status.pod_ip:
             return False
         ips += 1
-    if ips == len(pods):
-        return True
-    return False
+    return ips == len(pods)
 
 
 def pod_is_ready(name, namespace="default"):
@@ -485,8 +491,8 @@ def get_discovery_rule(yaml_file, observer, namespace="", container_index=0):
                 labels = doc["spec"]["template"]["metadata"]["labels"]
             except KeyError:
                 labels = []
-    assert name, "failed to get container name from %s!" % yaml_file
-    assert image, "failed to get container image from %s!" % yaml_file
+    assert name, f"failed to get container name from {yaml_file}!"
+    assert image, f"failed to get container image from {yaml_file}!"
     rule = 'container_state == "running"'
     rule += ' && discovered_by == "%s"' % observer
     rule += ' && container_name == "%s"' % name
@@ -497,14 +503,14 @@ def get_discovery_rule(yaml_file, observer, namespace="", container_index=0):
             rule += ' && Contains(container_labels, "%s")' % key
             rule += ' && Get(container_labels, "%s") == "%s"' % (key, value)
     if ports:
-        rule += " && ((port == %s" % ports[0]
-        rule += " && network_port == %s" % ports[0]
-        rule += " && private_port == %s)" % ports[0]
+        rule += f" && ((port == {ports[0]}"
+        rule += f" && network_port == {ports[0]}"
+        rule += f" && private_port == {ports[0]})"
         if len(ports) > 1:
             for port in ports[1:]:
-                rule += " || (port == %s" % port
-                rule += " && network_port == %s" % port
-                rule += " && private_port == %s)" % port
+                rule += f" || (port == {port}"
+                rule += f" && network_port == {port}"
+                rule += f" && private_port == {port})"
         rule += ")"
     if namespace:
         rule += ' && kubernetes_namespace == "%s"' % namespace
@@ -518,9 +524,7 @@ def get_metrics(dir_, name="metrics.txt"):
 
 def add_pod_spec_annotations(resource, annotations):
     if isinstance(resource, (list, tuple, types.GeneratorType)):
-        out = []
-        for res in resource:
-            out.append(add_pod_spec_annotations(res, annotations))
+        out = [add_pod_spec_annotations(res, annotations) for res in resource]
         return out
 
     out = deepcopy(resource)

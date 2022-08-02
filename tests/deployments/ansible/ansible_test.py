@@ -70,7 +70,7 @@ UPGRADE_VERSION = os.environ.get("UPGRADE_VERSION", "5.1.0")
 def get_config(backend, monitors, agent_version, stage, user):
     config_yaml = yaml.safe_load(CONFIG)
     config_yaml["sfx_package_stage"] = stage
-    config_yaml["sfx_version"] = agent_version + "-1"
+    config_yaml["sfx_version"] = f"{agent_version}-1"
     config_yaml["sfx_service_user"] = user
     config_yaml["sfx_service_group"] = user
     config_yaml["sfx_agent_config"]["ingestUrl"] = backend.ingest_url
@@ -106,10 +106,7 @@ def run_ansible(cont, init_system, backend, monitors, agent_version, stage, user
 )
 @pytest.mark.parametrize("ansible_version", ANSIBLE_VERSIONS)
 def test_ansible(base_image, init_system, ansible_version):
-    if (base_image, init_system) in DEB_DISTROS:
-        distro_type = "deb"
-    else:
-        distro_type = "rpm"
+    distro_type = "deb" if (base_image, init_system) in DEB_DISTROS else "rpm"
     buildargs = {"ANSIBLE_VERSION": ""}
     if ansible_version != "latest":
         buildargs = {"ANSIBLE_VERSION": f"=={ansible_version}"}

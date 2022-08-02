@@ -29,7 +29,7 @@ class PProfClient:
         self.goroutine_idx = 0
         self.heap_idx = 0
         name_match = re.search(r"::(.*?) \(.*\)$", os.environ.get("PYTEST_CURRENT_TEST", ""))
-        self.test_name = name_match.group(1) if name_match else "unknown"
+        self.test_name = name_match[1] if name_match else "unknown"
 
         pathlib.Path("/tmp/pprof").mkdir(parents=True, exist_ok=True)
 
@@ -38,10 +38,7 @@ class PProfClient:
         return f"http://{self.host}:{self.port}"
 
     def run_pprof(self, profile_type, sample_index=None, unit=""):
-        sample_index_flag = ""
-        if sample_index:
-            sample_index_flag = "-sample_index=" + sample_index
-
+        sample_index_flag = f"-sample_index={sample_index}" if sample_index else ""
         command = (
             f'go tool pprof -text -compact_labels -lines {sample_index_flag} -unit "{unit}" '
             + f"{self._base_url}/debug/pprof/{profile_type}"
@@ -69,9 +66,16 @@ class PProfClient:
         assert lines.pop(0).split() == ["flat", "flat%", "sum%", "cum", "cum%"], "unexpected pprof header line"
 
         nodes = [
-            Node(*[float(c.strip(string.ascii_letters + "%")) for c in li.split()[:5]], *li.split()[5:7])
+            Node(
+                *[
+                    float(c.strip(f"{string.ascii_letters}%"))
+                    for c in li.split()[:5]
+                ],
+                *li.split()[5:7],
+            )
             for li in lines
         ]
+
 
         return Profile(
             sampled=float(sampled.strip(string.ascii_letters)),

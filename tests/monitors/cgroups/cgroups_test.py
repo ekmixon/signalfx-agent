@@ -16,18 +16,18 @@ METADATA = Metadata.from_package("cgroups")
 
 def test_cgroup_monitor():
     with run_service(
-        "nginx", cpu_period=100_000, cpu_quota=10000, cpu_shares=50, mem_limit=20 * 1024 * 1024
-    ) as nginx_container:
+            "nginx", cpu_period=100_000, cpu_quota=10000, cpu_shares=50, mem_limit=20 * 1024 * 1024
+        ) as nginx_container:
         with Agent.run(
-            """
+                    """
     monitors:
       - type: cgroups
         extraMetrics: ['*']
     """
-        ) as agent:
+                ) as agent:
             verify(agent, METADATA.all_metrics)
 
-            expected_cgroup = "/docker/" + nginx_container.id
+            expected_cgroup = f"/docker/{nginx_container.id}"
 
             assert wait_for(
                 p(

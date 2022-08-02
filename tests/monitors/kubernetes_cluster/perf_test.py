@@ -20,7 +20,7 @@ def test_large_kubernetes_clusters():
         uids = []
 
         v1_client = client.CoreV1Api(fake_k8s_client)
-        for i in range(0, pod_count):
+        for i in range(pod_count):
             name = f"pod-{i}"
             pod_names.append(name)
 
@@ -37,9 +37,7 @@ def test_large_kubernetes_clusters():
                 namespace="default",
             )
 
-        with Agent.run(
-            dedent(
-                f"""
+        with Agent.run(dedent("""
           writer:
             maxRequests: 100
             propertiesMaxRequests: 100
@@ -51,12 +49,7 @@ def test_large_kubernetes_clusters():
              kubernetesAPI:
                 skipVerify: true
                 authType: none
-        """
-            ),
-            profiling=True,
-            debug=False,
-            extra_env=k8s_envvars,
-        ) as agent:
+        """), profiling=True, debug=False, extra_env=k8s_envvars) as agent:
             assert wait_for(p(has_datapoint, agent.fake_services, dimensions={"kubernetes_pod_name": "pod-0"}))
             assert wait_for(p(has_datapoint, agent.fake_services, dimensions={"kubernetes_pod_name": "pod-4999"}))
 
@@ -117,7 +110,7 @@ def test_service_tag_sync():
 
         v1_client = client.CoreV1Api(fake_k8s_client)
         ## create pods
-        for i in range(0, pod_count):
+        for i in range(pod_count):
             name = f"pod-{i}"
             pod_names.append(name)
 
@@ -134,7 +127,7 @@ def test_service_tag_sync():
                 namespace="default",
             )
         ## create services
-        for i in range(0, service_count):
+        for i in range(service_count):
             service_name = f"service-{i}"
             service_names.append(service_name)
             v1_client.create_namespaced_service(
@@ -147,9 +140,7 @@ def test_service_tag_sync():
                 namespace="default",
             )
 
-        with Agent.run(
-            dedent(
-                f"""
+        with Agent.run(dedent("""
           writer:
             maxRequests: 100
             propertiesMaxRequests: 10
@@ -162,12 +153,7 @@ def test_service_tag_sync():
              kubernetesAPI:
                 skipVerify: true
                 authType: none
-        """
-            ),
-            profiling=True,
-            debug=False,
-            extra_env=k8s_envvars,
-        ) as agent:
+        """), profiling=True, debug=False, extra_env=k8s_envvars) as agent:
             assert wait_for(p(has_datapoint, agent.fake_services, dimensions={"kubernetes_pod_name": "pod-0"}))
             assert wait_for(p(has_datapoint, agent.fake_services, dimensions={"kubernetes_pod_name": "pod-4999"}))
 
@@ -243,11 +229,11 @@ def test_large_k8s_cluster_deployment_prop():
         v1_client = client.CoreV1Api(fake_k8s_client)
         appsv1_client = client.AppsV1Api(fake_k8s_client)
         replica_sets = {}
-        for i in range(0, dp_count):
+        for i in range(dp_count):
             dp_name = f"dp-{i}"
             dp_uid = f"dpuid{i}"
-            rs_name = dp_name + "-replicaset"
-            rs_uid = dp_uid + "-rs"
+            rs_name = f"{dp_name}-replicaset"
+            rs_uid = f"{dp_uid}-rs"
             replica_sets[rs_uid] = {
                 "dp_name": dp_name,
                 "dp_uid": dp_uid,
@@ -273,7 +259,7 @@ def test_large_k8s_cluster_deployment_prop():
                 namespace="default",
             )
 
-            for j in range(0, pods_per_dp):
+            for j in range(pods_per_dp):
                 pod_name = f"pod-{rs_name}-{j}"
                 pod_uid = f"abcdef{i}-{j}"
                 replica_sets[rs_uid]["pod_uids"].append(pod_uid)
@@ -293,9 +279,7 @@ def test_large_k8s_cluster_deployment_prop():
                     },
                     namespace="default",
                 )
-        with Agent.run(
-            dedent(
-                f"""
+        with Agent.run(dedent("""
           writer:
             maxRequests: 100
             propertiesMaxRequests: 100
@@ -307,12 +291,7 @@ def test_large_k8s_cluster_deployment_prop():
              kubernetesAPI:
                 skipVerify: true
                 authType: none
-        """
-            ),
-            profiling=True,
-            debug=False,
-            extra_env=k8s_envvars,
-        ) as agent:
+        """), profiling=True, debug=False, extra_env=k8s_envvars) as agent:
             assert wait_for(
                 p(has_datapoint, agent.fake_services, dimensions={"kubernetes_pod_name": "pod-dp-0-replicaset-0"})
             )
@@ -402,11 +381,11 @@ def test_large_k8s_cluster_cronjob_prop():
         v1_client = client.CoreV1Api(fake_k8s_client)
         batchv1_client = client.BatchV1Api(fake_k8s_client)
         jobs = {}
-        for i in range(0, job_count):
+        for i in range(job_count):
             cj_name = f"cj-{i}"
             cj_uid = f"cjuid{i}"
-            job_name = cj_name + "-job"
-            job_uid = cj_uid + "-job"
+            job_name = f"{cj_name}-job"
+            job_uid = f"{cj_uid}-job"
             jobs[job_uid] = {
                 "cj_name": cj_name,
                 "cj_uid": cj_uid,
@@ -432,7 +411,7 @@ def test_large_k8s_cluster_cronjob_prop():
                 namespace="default",
             )
 
-            for j in range(0, pods_per_job):
+            for j in range(pods_per_job):
                 pod_name = f"pod-{job_name}-{j}"
                 pod_uid = f"abcdef{i}-{j}"
                 jobs[job_uid]["pod_uids"].append(pod_uid)
@@ -452,9 +431,7 @@ def test_large_k8s_cluster_cronjob_prop():
                     },
                     namespace="default",
                 )
-        with Agent.run(
-            dedent(
-                f"""
+        with Agent.run(dedent("""
           writer:
             maxRequests: 100
             propertiesMaxRequests: 100
@@ -466,12 +443,7 @@ def test_large_k8s_cluster_cronjob_prop():
              kubernetesAPI:
                 skipVerify: true
                 authType: none
-        """
-            ),
-            profiling=True,
-            debug=False,
-            extra_env=k8s_envvars,
-        ) as agent:
+        """), profiling=True, debug=False, extra_env=k8s_envvars) as agent:
             assert wait_for(p(has_datapoint, agent.fake_services, dimensions={"kubernetes_pod_name": "pod-cj-0-job-0"}))
             assert wait_for(
                 p(has_datapoint, agent.fake_services, dimensions={"kubernetes_pod_name": "pod-cj-4999-job-0"})

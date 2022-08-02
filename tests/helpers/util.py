@@ -284,23 +284,13 @@ def get_all_monitor_metrics_from_selfdescribe(monitor, json_path=SELFDESCRIBE_JS
 
 
 def get_default_monitor_metrics_from_selfdescribe(monitor, json_path=SELFDESCRIBE_JSON):
-    default_metrics = set()
     all_metrics = get_monitor_metrics_from_selfdescribe(monitor, json_path)
-    for metric in all_metrics:
-        if all_metrics[metric]["default"]:
-            default_metrics.add(metric)
-
-    return default_metrics
+    return {metric for metric in all_metrics if all_metrics[metric]["default"]}
 
 
 def get_custom_monitor_metrics_from_selfdescribe(monitor, json_path=SELFDESCRIBE_JSON):
-    custom_metrics = set()
     all_metrics = get_monitor_metrics_from_selfdescribe(monitor, json_path)
-    for metric in all_metrics:
-        if not all_metrics[metric]["default"]:
-            custom_metrics.add(metric)
-
-    return custom_metrics
+    return {metric for metric in all_metrics if not all_metrics[metric]["default"]}
 
 
 def get_monitor_dims_from_selfdescribe(monitor, json_path=SELFDESCRIBE_JSON):
@@ -425,13 +415,16 @@ def copy_file_into_container(path, container, target_path):
 
 
 def path_exists_in_container(container, path):
-    code, _ = container.exec_run("test -e %s" % path)
+    code, _ = container.exec_run(f"test -e {path}")
     return code == 0
 
 
 def get_container_file_content(container, path):
-    assert path_exists_in_container(container, path), "File %s does not exist!" % path
-    return container.exec_run("cat %s" % path)[1].decode("utf-8")
+    assert path_exists_in_container(
+        container, path
+    ), f"File {path} does not exist!"
+
+    return container.exec_run(f"cat {path}")[1].decode("utf-8")
 
 
 def get_stripped_container_id(container_id):

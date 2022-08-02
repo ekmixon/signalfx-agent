@@ -9,7 +9,7 @@ app = Sanic(name=__name__)
 def parse_access_key_id(request):
     auth = request.headers.get("authorization")
     try:
-        return re.search(r"Credential=(.*?)/", auth).group(1)
+        return re.search(r"Credential=(.*?)/", auth)[1]
     except IndexError:
         return None
 

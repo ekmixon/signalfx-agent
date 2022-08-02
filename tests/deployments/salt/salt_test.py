@@ -68,7 +68,7 @@ def get_config(backend, agent_version, monitors, stage, user, group=None):
 
     config_yaml = yaml.safe_load(CONFIG)
     config_yaml["signalfx-agent"]["package_stage"] = stage
-    config_yaml["signalfx-agent"]["version"] = agent_version + "-1"
+    config_yaml["signalfx-agent"]["version"] = f"{agent_version}-1"
     config_yaml["signalfx-agent"]["service_user"] = user
     config_yaml["signalfx-agent"]["service_group"] = group
     config_yaml["signalfx-agent"]["conf"]["ingestUrl"] = backend.ingest_url
@@ -107,11 +107,7 @@ def run_salt(cont, init_system, backend, agent_version, monitors, stage, user="s
     + [pytest.param(distro, init, marks=pytest.mark.rpm) for distro, init in RPM_DISTROS],
 )
 def test_salt(base_image, init_system):
-    if (base_image, init_system) in DEB_DISTROS:
-        distro_type = "deb"
-    else:
-        distro_type = "rpm"
-
+    distro_type = "deb" if (base_image, init_system) in DEB_DISTROS else "rpm"
     opts = {"path": REPO_ROOT_DIR, "dockerfile": DOCKERFILES_DIR / f"Dockerfile.{base_image}", "with_socat": False}
     with run_init_system_image(base_image, **opts) as [cont, backend]:
         try:

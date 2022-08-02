@@ -21,7 +21,7 @@ def run_vault():
         assert wait_for(lambda: "Root Token:" in vault_cont.logs().decode("utf-8"), 10)
 
         logs = vault_cont.logs()
-        token = re.search(r"Root Token: (.*)$", logs.decode("utf-8"), re.MULTILINE).group(1)
+        token = re.search(r"Root Token: (.*)$", logs.decode("utf-8"), re.MULTILINE)[1]
         assert token, "Could not get root token of vault server"
         client = hvac.Client(url=f"http://{vault_ip}:8200", token=token)
         client.sys.enable_audit_device(

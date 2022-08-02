@@ -45,7 +45,7 @@ def check_values(dps, status_code, code=1, regex=1, cert=1):
             assert dp.value.intValue == regex
         if dp.metric == METRIC_CODE_MATCH:
             assert dp.value.intValue > 0 or code
-        if dp.metric == METRIC_TIME or dp.metric == METRIC_CERT_EXPIRY:
+        if dp.metric in [METRIC_TIME, METRIC_CERT_EXPIRY]:
             assert dp.value.doubleValue > 0
 
 
@@ -81,7 +81,7 @@ def test_http_minimal_metrics():
 def test_http_all_stats():
     # Config to get every metrics to OK
     with Agent.run(
-        f"""
+            f"""
         monitors:
         - type: http
           urls:
@@ -89,19 +89,20 @@ def test_http_all_stats():
           regex: ".*"
           desiredCode: 200 # default
         """
-    ) as agent:
+        ) as agent:
         for dim in DIMS_GLOBAL:
             # global dimensions should be on every metrics
             assert wait_for(
                 p(all_datapoints_have_dim_key, agent.fake_services, dim)
-            ), "Didn't get http datapoints with {} global dimension".format(dim)
+            ), f"Didn't get http datapoints with {dim} global dimension"
+
         check_values(agent.fake_services.datapoints, agent.config["monitors"][0]["desiredCode"])
 
 
 def test_http_minimal_stats():
     # config to get KO on regex, code and test no redirect
     with Agent.run(
-        f"""
+            f"""
         monitors:
         - type: http
           urls:
@@ -109,12 +110,13 @@ def test_http_minimal_stats():
           noRedirects: true
           regex: "$a"
         """
-    ) as agent:
+        ) as agent:
         # tls metric should not be available
         for metric in METRICS_OPTIONAL:
             assert not has_datapoint_with_metric_name(
                 agent.fake_services, metric
-            ), "Got http datapoints with metric name {} but should not".format(metric)
+            ), f"Got http datapoints with metric name {metric} but should not"
+
         # 301 because not redirectd and regex should never match
         check_values(agent.fake_services.datapoints, 0, code=0, regex=0)
 

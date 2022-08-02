@@ -49,7 +49,7 @@ def check_service_status(host):
 
 @pytest.mark.parametrize("version", VERSIONS)
 def test_elasticsearch_query_simple_metric_aggs(version):
-    with run_service("elasticsearch/%s" % version) as es_container:
+    with run_service(f"elasticsearch/{version}") as es_container:
         host = container_ip(es_container)
         check_service_status(host)
         write_data(host, version)
@@ -72,7 +72,7 @@ def test_elasticsearch_query_simple_metric_aggs(version):
 @pytest.mark.parametrize("version", VERSIONS)
 def test_elasticsearch_query_extened_stats_aggs(version):
 
-    with run_service("elasticsearch/%s" % version) as es_container:
+    with run_service(f"elasticsearch/{version}") as es_container:
         host = container_ip(es_container)
         check_service_status(host)
         write_data(host, version)
@@ -90,15 +90,18 @@ def test_elasticsearch_query_extened_stats_aggs(version):
                     p(
                         has_datapoint,
                         agent.fake_services,
-                        metric_name="cpu_utilization_stats.%s" % metric,
-                        dimensions={"index": "metrics", "metric_aggregation_type": "extended_stats"},
+                        metric_name=f"cpu_utilization_stats.{metric}",
+                        dimensions={
+                            "index": "metrics",
+                            "metric_aggregation_type": "extended_stats",
+                        },
                     )
                 ), "Didn't get elasticsearch-query datapoints"
 
 
 @pytest.mark.parametrize("version", VERSIONS)
 def test_elasticsearch_query_simple_metric_aggs_with_filters_aggs(version):
-    with run_service("elasticsearch/%s" % version) as es_container:
+    with run_service(f"elasticsearch/{version}") as es_container:
         host = container_ip(es_container)
         check_service_status(host)
         write_data(host, version)
@@ -136,7 +139,7 @@ def test_elasticsearch_query_simple_metric_aggs_with_filters_aggs(version):
 
 @pytest.mark.parametrize("version", VERSIONS)
 def test_elasticsearch_query_terminal_bucket_aggs(version):
-    with run_service("elasticsearch/%s" % version) as es_container:
+    with run_service(f"elasticsearch/{version}") as es_container:
         host = container_ip(es_container)
         check_service_status(host)
         write_data(host, version)
@@ -173,7 +176,7 @@ def test_elasticsearch_query_terminal_bucket_aggs(version):
 
 @pytest.mark.parametrize("version", VERSIONS)
 def test_elasticsearch_query_percentiles_aggs_with_filters_aggs(version):
-    with run_service("elasticsearch/%s" % version) as es_container:
+    with run_service(f"elasticsearch/{version}") as es_container:
         host = container_ip(es_container)
         check_service_status(host)
         write_data(host, version)
@@ -204,7 +207,7 @@ def test_elasticsearch_query_percentiles_aggs_with_filters_aggs(version):
                         p(
                             has_datapoint,
                             agent.fake_services,
-                            metric_name="cpu_utilization_percentiles.%s" % metric,
+                            metric_name=f"cpu_utilization_percentiles.{metric}",
                             dimensions={
                                 "index": "metrics",
                                 "metric_aggregation_type": "percentiles",
@@ -250,13 +253,10 @@ def write_data(host, version, num_docs=10):
     for i in range(num_docs):
         for dim_set in dimensions_set:
             id_str = ""
-            doc = {}
-            for mg in metric_groups:
-                doc[mg + "_utilization"] = randint(0, 100)
-
+            doc = {f"{mg}_utilization": randint(0, 100) for mg in metric_groups}
             for dim_key, dim_val in dim_set.items():
                 doc[dim_key] = dim_val
-                id_str += dim_key + ":" + dim_val + "_"
+                id_str += f"{dim_key}:{dim_val}_"
 
             doc["@timestamp"] = i
 
@@ -266,7 +266,7 @@ def write_data(host, version, num_docs=10):
             id = hash_object.hexdigest()
 
             res = es.index(index="metrics", doc_type=doc_type, id=id, body=doc)
-            print("document created: %s" % doc)
+            print(f"document created: {doc}")
             print(res)
 
         i = i + 1

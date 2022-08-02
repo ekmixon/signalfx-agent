@@ -159,14 +159,14 @@ def get_chart_name_version():
         chart_yaml = yaml.safe_load(fd.read())
         chart_name = chart_yaml.get("name")
         chart_version = chart_yaml.get("version")
-    assert chart_name, "failed to get chart name from %s" % chart_path
-    assert chart_version, "failed to get chart version from %s" % chart_path
+    assert chart_name, f"failed to get chart name from {chart_path}"
+    assert chart_version, f"failed to get chart version from {chart_path}"
     return chart_name, chart_version
 
 
 def get_daemonset_name(k8s_cluster, cont, helm_major_version):
     chart_name, chart_version = get_chart_name_version()
-    chart_release_name = chart_name + "-" + chart_version
+    chart_release_name = f"{chart_name}-{chart_version}"
     list_cmd = (
         helm_command_prefix(k8s_cluster, helm_major_version)
         + f" list --namespace={k8s_cluster.test_namespace} --output=yaml"
@@ -189,7 +189,7 @@ def get_daemonset_name(k8s_cluster, cont, helm_major_version):
     release_name = release.get("Name", release.get("name"))
     assert release_name, "failed to get name for release:\n%s" % yaml.dump(release)
     if helm_major_version < 3:
-        return release_name + "-" + chart_name
+        return f"{release_name}-{chart_name}"
     return release_name
 
 
@@ -197,17 +197,21 @@ def install_helm_chart(k8s_cluster, values_path, cont, helm_major_version):
     options = f"--values {values_path} --namespace={k8s_cluster.test_namespace} --debug {CONTAINER_CHART_DIR}"
     if helm_major_version >= 3:
         options = f"--generate-name {options}"
-    install_cmd = helm_command_prefix(k8s_cluster, helm_major_version) + f" install {options}"
+    install_cmd = f"{helm_command_prefix(k8s_cluster, helm_major_version)} install {options}"
+
     print(f"Running Helm install: {install_cmd}")
     output = exec_helm(cont, install_cmd)
     print(f"Helm chart install output:\n{output}")
 
     daemonset_name = get_daemonset_name(k8s_cluster, cont, helm_major_version)
-    print("Waiting for daemonset %s to be ready ..." % daemonset_name)
+    print(f"Waiting for daemonset {daemonset_name} to be ready ...")
     try:
         assert wait_for(
-            p(daemonset_is_ready, daemonset_name, k8s_cluster.test_namespace), timeout_seconds=120, interval_seconds=2
-        ), ("timed out waiting for %s daemonset to be ready!" % daemonset_name)
+            p(daemonset_is_ready, daemonset_name, k8s_cluster.test_namespace),
+            timeout_seconds=120,
+            interval_seconds=2,
+        ), f"timed out waiting for {daemonset_name} daemonset to be ready!"
+
     finally:
         print(k8s_cluster.exec_kubectl(f"describe daemonset {daemonset_name}", namespace=k8s_cluster.test_namespace))
 
@@ -226,8 +230,8 @@ def test_helm(k8s_cluster, helm_version):
     helm_major_version = int(helm_version.split(".")[0])
     with run_helm_image(k8s_cluster, helm_version) as cont:
         with k8s_cluster.create_resources([APP_YAML_PATH]), tiller_rbac_resources(
-            k8s_cluster, helm_major_version
-        ), fake_backend.start() as backend:
+                    k8s_cluster, helm_major_version
+                ), fake_backend.start() as backend:
             if helm_major_version < 3:
                 init_helm(k8s_cluster, cont, helm_major_version)
 
@@ -247,7 +251,7 @@ def test_helm(k8s_cluster, helm_version):
                         assert wait_for(p(has_datapoint, backend, metric_name="memory.utilization"), timeout_seconds=60)
                     finally:
                         for pod in get_pods_by_labels("app=signalfx-agent", namespace=k8s_cluster.test_namespace):
-                            print("pod/%s:" % pod.metadata.name)
+                            print(f"pod/{pod.metadata.name}:")
                             status = exec_pod_command(
                                 pod.metadata.name, AGENT_STATUS_COMMAND, namespace=k8s_cluster.test_namespace
                             )

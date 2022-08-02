@@ -40,16 +40,12 @@ class CollectdInterface(object):
         Implementation of the register_read function, immediately schedules the
         read callback to run on the determined interval.
         """
-        final_name = name or "%s.%s" % (callback.__module__, callback.__name__)
+        final_name = name or f"{callback.__module__}.{callback.__name__}"
         if final_name in self.names:
             logger.error("Read callback name %s already registered, registering twice", final_name)
         self.names.add(final_name)
 
-        if data:
-            func = partial(callback, data)
-        else:
-            func = callback
-
+        func = partial(callback, data) if data else callback
         self.read_initializers.append(
             partial(self.scheduler.run_on_interval, interval or self.default_interval, func, immediately=True)
         )
